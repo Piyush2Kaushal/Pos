@@ -94,15 +94,15 @@ export function InventoryView() {
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <Input
-            type="text"
-            placeholder="Search inventory..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 z-10" />
+  <Input
+    type="text"
+    placeholder="Search inventory..."
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+    className="pl-11 bg-white"
+  />
+</div>
       </div>
 
       {/* Inventory Table */}
@@ -168,8 +168,7 @@ export function InventoryView() {
             <DialogTitle>Update Stock</DialogTitle>
             <DialogDescription>Enter the new stock quantity for the product.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="stock">New Stock Quantity</Label>
               <Input
                 id="stock"
@@ -180,7 +179,6 @@ export function InventoryView() {
                 placeholder="Enter new stock quantity"
               />
             </div>
-          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingProduct(null)}>
               Cancel

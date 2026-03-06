@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { usePOS } from "@/app/context/pos-context";
-import { Plus, Edit, Trash2, Tag } from "lucide-react";
+import { Plus, Edit, Trash2, Tag, AlertTriangle } from "lucide-react";
 import { Input } from "@/app/components/ui/input";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
@@ -28,6 +28,10 @@ export function CategoriesView() {
   const { products, addCategory, deleteCategory } = usePOS();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newCategory, setNewCategory] = useState("");
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; category: string }>({
+    open: false,
+    category: "",
+  });
 
   const categories = [...new Set(products.map((p) => p.category))];
   
@@ -59,16 +63,7 @@ export function CategoriesView() {
   };
 
   const handleDeleteCategory = (category: string) => {
-    const hasProducts = products.some((p) => p.category === category);
-    if (hasProducts) {
-      toast.error("Cannot delete category with existing products");
-      return;
-    }
-
-    if (confirm(`Are you sure you want to delete the "${category}" category?`)) {
-      deleteCategory(category);
-      toast.success("Category deleted successfully");
-    }
+    setDeleteDialog({ open: true, category });
   };
 
   return (
@@ -165,15 +160,15 @@ export function CategoriesView() {
                     £{category.totalValue.toFixed(2)}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDeleteCategory(category.name)}
-                      className="text-red-600 hover:text-red-700"
-                      disabled={category.productCount > 0}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
+                  <Button
+  size="sm"
+  variant="ghost"
+  onClick={() => handleDeleteCategory(category.name)}
+  className="text-red-500 hover:text-red-600 hover:bg-red-50"
+  title="Delete category"
+>
+  <Trash2 className="w-3.5 h-3.5" />
+</Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -191,8 +186,7 @@ export function CategoriesView() {
               Enter a name for the new product category.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="categoryName">Category Name</Label>
               <Input
                 id="categoryName"
@@ -201,7 +195,7 @@ export function CategoriesView() {
                 placeholder="Enter category name"
               />
             </div>
-          </div>
+       
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
               Cancel
@@ -210,6 +204,47 @@ export function CategoriesView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* ════ DELETE CATEGORY DIALOG ════ */}
+<Dialog open={deleteDialog.open} onOpenChange={(o) => !o && setDeleteDialog({ open: false, category: "" })}>
+  <DialogContent className="w-[90vw] sm:max-w-[400px]">
+    <DialogHeader>
+      <DialogTitle className="flex items-center gap-2 text-red-600">
+        <AlertTriangle className="w-5 h-5" />
+        Delete Category
+      </DialogTitle>
+      <DialogDescription>
+        Are you sure you want to delete the <strong>"{deleteDialog.category}"</strong> category? This action cannot be undone.
+      </DialogDescription>
+    </DialogHeader>
+    <DialogFooter className="gap-2 flex-col sm:flex-row pt-2">
+      <Button
+        variant="outline"
+        className="w-full sm:w-auto"
+        onClick={() => setDeleteDialog({ open: false, category: "" })}
+      >
+        Cancel
+      </Button>
+      <Button
+        variant="destructive"
+        className="w-full sm:w-auto"
+        onClick={() => {
+          const hasProducts = products.some((p) => p.category === deleteDialog.category);
+          if (hasProducts) {
+            toast.error("Cannot delete category with existing products");
+            setDeleteDialog({ open: false, category: "" });
+            return;
+          }
+          deleteCategory(deleteDialog.category);
+          toast.success("Category deleted successfully");
+          setDeleteDialog({ open: false, category: "" });
+        }}
+      >
+        <Trash2 className="w-4 h-4 mr-2" />
+        Delete
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
     </div>
   );
 }

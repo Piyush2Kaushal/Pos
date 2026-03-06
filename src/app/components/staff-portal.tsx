@@ -14,7 +14,7 @@ import {
   Plus, Minus, Trash2, Check, Clock, Truck, Box, X,
   Search, Filter, AlertCircle, CheckCircle2, RotateCcw,
   Phone, Mail, MapPin, Star, Eye, ShoppingCart, SendHorizonal,
-  RefreshCw, Layers, Hash, DollarSign, TrendingUp, User,
+  RefreshCw, Layers, Hash, PoundSterling, TrendingUp, User,
   Zap, ArrowRight, Lock, Building2, BarChart3, CalendarDays,
   PackageCheck, PackageOpen, Navigation, ShieldCheck, Info,
 } from "lucide-react";

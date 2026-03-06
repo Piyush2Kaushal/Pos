@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { usePOS } from "@/app/context/pos-context";
 import {
-  DollarSign, ShoppingBag, TrendingUp, TrendingDown, Calendar,
+  PoundSterling, ShoppingBag, TrendingUp, TrendingDown, Calendar,
   FileText, BarChart3, Package, Users, Receipt, Printer, Filter,
   FileSpreadsheet, FileJson, PieChart, Activity, CreditCard,
   Box, AlertCircle, CheckCircle2, ArrowUpRight, Banknote,
   Tag, Layers, Store, ChevronDown, Star, Percent,
-  ReceiptText, Wallet, BadgeDollarSign, ShoppingCart,
+  ReceiptText, Wallet, BadgePoundSterling, ShoppingCart,
   BarChart2, BookOpen,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/app/components/ui/card";
@@ -282,7 +282,7 @@ export function ReportsView() {
               <SelectTrigger className="bg-white/10 border-white/20 text-white h-9 text-sm [&>svg]:text-white">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className='bg-white'>
                 {[["all","All Time"],["today","Today"],["yesterday","Yesterday"],["last7days","Last 7 Days"],["last30days","Last 30 Days"],["thisMonth","This Month"],["lastMonth","Last Month"],["thisYear","This Year"],["lastYear","Last Year"],["custom","Custom Range"]].map(([v,l]) => (
                   <SelectItem key={v} value={v}>{l}</SelectItem>
                 ))}
@@ -312,7 +312,7 @@ export function ReportsView() {
         {/* Global KPI strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
           {[
-            { label: "Total Revenue",   val: `£${(totalRevenue+totalInvoiceRevenue).toFixed(2)}`, sub: `POS £${totalRevenue.toFixed(0)} · Inv £${totalInvoiceRevenue.toFixed(0)}`, icon: DollarSign, bg: "bg-white/15", border: "border-white/20" },
+            { label: "Total Revenue",   val: `£${(totalRevenue+totalInvoiceRevenue).toFixed(2)}`, sub: `POS £${totalRevenue.toFixed(0)} · Inv £${totalInvoiceRevenue.toFixed(0)}`, icon: PoundSterling, bg: "bg-white/15", border: "border-white/20" },
             { label: "Transactions",    val: String(totalTransactions + filteredInvoices.length),  sub: `${totalTransactions} sales · ${filteredInvoices.length} invoices`,           icon: ShoppingBag, bg: "bg-white/15", border: "border-white/20" },
             { label: "Gross Profit",    val: `£${grossProfit.toFixed(2)}`,                         sub: `Margin: ${profitMargin.toFixed(1)}%`,                                        icon: TrendingUp,  bg: "bg-white/15", border: "border-white/20" },
             { label: "Items Sold",      val: String(totalItems),                                   sub: `Avg ${(totalItems/(totalTransactions||1)).toFixed(1)} per sale`,              icon: Package,     bg: "bg-white/15", border: "border-white/20" },
@@ -357,7 +357,7 @@ export function ReportsView() {
             {/* Mini KPIs */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <KpiCard label="Total Transactions" value={String(totalTransactions)} sub="This period"                   icon={ShoppingCart}    gradient="bg-blue-50 border-blue-100"    iconBg="bg-blue-600" />
-              <KpiCard label="Revenue"            value={`£${totalRevenue.toFixed(2)}`} sub="From POS sales"           icon={DollarSign}      gradient="bg-emerald-50 border-emerald-100" iconBg="bg-emerald-600" />
+              <KpiCard label="Revenue"            value={`£${totalRevenue.toFixed(2)}`} sub="From POS sales"           icon={PoundSterling}      gradient="bg-emerald-50 border-emerald-100" iconBg="bg-emerald-600" />
               <KpiCard label="Avg Transaction"    value={`£${averageTransaction.toFixed(2)}`} sub="Per sale"           icon={BarChart2}       gradient="bg-violet-50 border-violet-100"  iconBg="bg-violet-600" />
               <KpiCard label="Items Sold"         value={String(totalItems)} sub={`${(totalItems/(totalTransactions||1)).toFixed(1)} per txn`} icon={Package} gradient="bg-amber-50 border-amber-100" iconBg="bg-amber-500" />
             </div>
@@ -835,9 +835,9 @@ export function ReportsView() {
         {activeTab === "tax" && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <KpiCard label="Total Sales (inc. VAT)"  value={`£${(totalRevenue+totalInvoiceRevenue).toFixed(2)}`} sub="Gross revenue" icon={DollarSign} gradient="bg-blue-50 border-blue-100"   iconBg="bg-blue-600"   />
+              <KpiCard label="Total Sales (inc. VAT)"  value={`£${(totalRevenue+totalInvoiceRevenue).toFixed(2)}`} sub="Gross revenue" icon={PoundSterling} gradient="bg-blue-50 border-blue-100"   iconBg="bg-blue-600"   />
               <KpiCard label="VAT Collected"           value={`£${totalVatCollected.toFixed(2)}`} sub="From invoices"                  icon={Percent}    gradient="bg-emerald-50 border-emerald-100" iconBg="bg-emerald-600" />
-              <KpiCard label="Net Sales (ex. VAT)"     value={`£${((totalRevenue+totalInvoiceRevenue)-totalVatCollected).toFixed(2)}`} sub="After VAT deduction" icon={BadgeDollarSign} gradient="bg-violet-50 border-violet-100" iconBg="bg-violet-600" />
+              <KpiCard label="Net Sales (ex. VAT)"     value={`£${((totalRevenue+totalInvoiceRevenue)-totalVatCollected).toFixed(2)}`} sub="After VAT deduction" icon={BadgePoundSterling} gradient="bg-violet-50 border-violet-100" iconBg="bg-violet-600" />
             </div>
 
             {/* VAT Rate breakdown */}

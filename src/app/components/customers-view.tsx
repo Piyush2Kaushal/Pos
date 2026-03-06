@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { usePOS } from "@/app/context/pos-context";
 import { useAuth } from "@/app/context/auth-context";
-import { Search, UserPlus, Users, Edit, Trash2, BookOpen, Eye, FileText, TrendingUp, ArrowLeft, X, DollarSign, Calendar, Plus, Minus, CreditCard, History } from "lucide-react";
+import { Search, UserPlus, Users, Edit, Trash2, BookOpen, Eye, FileText, TrendingUp, ArrowLeft, X, PoundSterling, Calendar, Plus, Minus, CreditCard, History, AlertTriangle } from "lucide-react";
 import { Input } from "@/app/components/ui/input";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
@@ -49,6 +49,17 @@ export function CustomersView() {
   const [creditAmount, setCreditAmount] = useState("");
   const [creditDescription, setCreditDescription] = useState("");
   const [creditReference, setCreditReference] = useState("");
+
+
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    customerId: string;
+    customerName: string;
+  }>({
+    open: false,
+    customerId: "",
+    customerName: "",
+  });
   const [formData, setFormData] = useState({
     name: "",
     type: "retailer" as CustomerType,
@@ -120,11 +131,12 @@ export function CustomersView() {
     setIsAddDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this customer?")) {
-      deleteCustomer(id);
-      toast.success("Customer deleted successfully");
-    }
+  const handleDelete = (customer: Customer) => {
+    setDeleteDialog({
+      open: true,
+      customerId: customer.id,
+      customerName: customer.name,
+    });
   };
 
   const getCustomerTypeBadge = (type: CustomerType) => {
@@ -336,7 +348,7 @@ export function CustomersView() {
                       </p>
                     </div>
                     <div className="p-3 bg-green-50 rounded-lg">
-                      <DollarSign className="w-6 h-6 text-green-600" />
+                      <PoundSterling className="w-6 h-6 text-green-600" />
                     </div>
                   </div>
                 </CardContent>
@@ -792,7 +804,7 @@ export function CustomersView() {
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 z-10 pointer-events-none" />
           <Input
             type="text"
             placeholder="Search customers..."
@@ -848,13 +860,13 @@ export function CustomersView() {
                         <Edit className="w-3 h-3" />
                       </Button>
                       <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDelete(customer.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
+  size="sm"
+  variant="outline"
+  onClick={() => handleDelete(customer)}
+  className="text-red-600 hover:text-red-700"
+>
+  <Trash2 className="w-3 h-3" />
+</Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -898,7 +910,7 @@ export function CustomersView() {
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className='bg-white'>
                   <SelectItem value="wholesaler">Wholesaler (30% off)</SelectItem>
                   <SelectItem value="trader">Trader (15% off)</SelectItem>
                   <SelectItem value="retailer">Retailer (Full Price)</SelectItem>
@@ -971,6 +983,62 @@ export function CustomersView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+
+      {/* ════ DELETE CUSTOMER CONFIRMATION DIALOG ════ */}
+<Dialog
+  open={deleteDialog.open}
+  onOpenChange={(o) =>
+    !o &&
+    setDeleteDialog({ open: false, customerId: "", customerName: "" })
+  }
+>
+  <DialogContent className="w-[90vw] sm:max-w-[400px]">
+    <DialogHeader>
+      <DialogTitle className="flex items-center gap-2 text-red-600">
+        <AlertTriangle className="w-5 h-5" />
+        Delete Customer
+      </DialogTitle>
+      <DialogDescription>
+        Are you sure you want to delete{" "}
+        <strong>"{deleteDialog.customerName}"</strong>? This will
+        permanently remove the customer and all associated data. This
+        action cannot be undone.
+      </DialogDescription>
+    </DialogHeader>
+    <DialogFooter className="gap-2 flex-col sm:flex-row pt-2">
+      <Button
+        variant="outline"
+        className="w-full sm:w-auto"
+        onClick={() =>
+          setDeleteDialog({
+            open: false,
+            customerId: "",
+            customerName: "",
+          })
+        }
+      >
+        Cancel
+      </Button>
+      <Button
+        variant="destructive"
+        className="w-full sm:w-auto"
+        onClick={() => {
+          deleteCustomer(deleteDialog.customerId);
+          toast.success("Customer deleted successfully");
+          setDeleteDialog({
+            open: false,
+            customerId: "",
+            customerName: "",
+          });
+        }}
+      >
+        <Trash2 className="w-4 h-4 mr-2" />
+        Delete
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
     </div>
   );
 }

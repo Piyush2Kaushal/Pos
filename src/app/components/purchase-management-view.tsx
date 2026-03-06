@@ -6,7 +6,7 @@ import {
   MapPin, Star, TrendingUp, TrendingDown, BarChart3, Clock,
   CheckCircle2, AlertTriangle, Edit, Download, FileText, Truck,
   CreditCard, RefreshCw, Filter, X, ChevronDown, ChevronUp,
-  Globe, Hash, Calendar, DollarSign, ShoppingCart, Award,
+  Globe, Hash, Calendar, PoundSterling, ShoppingCart, Award,
   ArrowUpRight, Layers, Users, Send, CircleDot, Sparkles,
   Paperclip, FileImage, ZoomIn, ZoomOut, Share2,
 } from "lucide-react";
@@ -353,7 +353,7 @@ export function PurchaseManagementView() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
           { label:"Total Orders",      value:purchases.length,   color:"blue",   icon:<FileText className="w-4 h-4"/>      },
-          { label:"Total Spent",        value:`£${totalSpent.toFixed(0)}`, color:"red", icon:<DollarSign className="w-4 h-4"/> },
+          { label:"Total Spent",        value:`£${totalSpent.toFixed(0)}`, color:"red", icon:<PoundSterling className="w-4 h-4"/> },
           { label:"Pending",            value:pendingCount,       color:"amber",  icon:<Clock className="w-4 h-4"/>         },
           { label:"Completed",          value:purchases.filter(p=>p.status==="completed").length, color:"green", icon:<CheckCircle2 className="w-4 h-4"/>},
           { label:"Active Suppliers",   value:suppliers.filter(s=>s.status==="active").length, color:"purple", icon:<Building2 className="w-4 h-4"/>},
@@ -636,7 +636,7 @@ export function PurchaseManagementView() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Spend by supplier */}
             <Card>
-              <CardHeader><CardTitle className="text-base flex items-center gap-2"><DollarSign className="w-4 h-4 text-blue-600"/>Spend by Supplier</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base flex items-center gap-2"><PoundSterling className="w-4 h-4 text-blue-600"/>Spend by Supplier</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={spendChartData} margin={{top:5,right:10,left:-10,bottom:5}}>

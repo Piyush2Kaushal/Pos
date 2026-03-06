@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { usePOS } from "@/app/context/pos-context";
-import { Search, Plus, Edit, Trash2, Users, Shield } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Users, Shield, AlertTriangle } from "lucide-react";
 import { Input } from "@/app/components/ui/input";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
@@ -71,6 +71,17 @@ export function StaffManagementView() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // ── Delete confirmation dialog state (same pattern as CustomersView) ──
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    staffId: string;
+    staffName: string;
+  }>({
+    open: false,
+    staffId: "",
+    staffName: "",
+  });
 
   const [formData, setFormData] = useState({
     name: "",
@@ -158,11 +169,13 @@ export function StaffManagementView() {
     setIsAddDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this staff member?")) {
-      deleteStaff(id);
-      toast.success("Staff member deleted successfully");
-    }
+  // ── Opens the confirmation dialog instead of browser confirm() ──
+  const handleDelete = (member: Staff) => {
+    setDeleteDialog({
+      open: true,
+      staffId: member.id,
+      staffName: member.name,
+    });
   };
 
   const activeStaff = staff.filter((s) => s.status === "active").length;
@@ -232,7 +245,7 @@ export function StaffManagementView() {
         {/* Filters */}
         <div className="flex gap-4 mb-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 z-10 pointer-events-none" />
             <Input
               type="text"
               placeholder="Search staff..."
@@ -245,7 +258,7 @@ export function StaffManagementView() {
             <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white">
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="inactive">Inactive</SelectItem>
@@ -304,10 +317,11 @@ export function StaffManagementView() {
                       >
                         <Edit className="w-3 h-3" />
                       </Button>
+                      {/* ── Calls dialog, not confirm() ── */}
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleDelete(member.id)}
+                        onClick={() => handleDelete(member)}
                         className="text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -387,7 +401,7 @@ export function StaffManagementView() {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white">
                     <SelectItem value="admin">Admin</SelectItem>
                     <SelectItem value="manager">Manager</SelectItem>
                     <SelectItem value="cashier">Cashier</SelectItem>
@@ -406,7 +420,7 @@ export function StaffManagementView() {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white">
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
@@ -489,6 +503,52 @@ export function StaffManagementView() {
             </Button>
             <Button onClick={handleSubmit}>
               {editingStaff ? "Update" : "Add"} Staff
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ════ DELETE STAFF CONFIRMATION DIALOG ════ */}
+      <Dialog
+        open={deleteDialog.open}
+        onOpenChange={(o) =>
+          !o && setDeleteDialog({ open: false, staffId: "", staffName: "" })
+        }
+      >
+        <DialogContent className="w-[90vw] sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="w-5 h-5" />
+              Delete Staff Member
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete{" "}
+              <strong>"{deleteDialog.staffName}"</strong>? This will permanently
+              remove the staff member and all associated data. This action cannot
+              be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 flex-col sm:flex-row pt-2">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={() =>
+                setDeleteDialog({ open: false, staffId: "", staffName: "" })
+              }
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              className="w-full sm:w-auto"
+              onClick={() => {
+                deleteStaff(deleteDialog.staffId);
+                toast.success("Staff member deleted successfully");
+                setDeleteDialog({ open: false, staffId: "", staffName: "" });
+              }}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>

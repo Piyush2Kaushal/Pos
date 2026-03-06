@@ -29,7 +29,7 @@ import {
   Star,
   Calendar,
   Clock,
-  DollarSign,
+  PoundSterling,
   Package,
   CheckCircle2,
   XCircle,
@@ -73,6 +73,9 @@ import { WebsiteOrdersTab } from "@/app/components/website-orders-tab";
 export function WebsiteManagementView() {
   const { products } = usePOS();
   const [activeTab, setActiveTab] = useState("overview");
+
+  const [deleteBannerDialog, setDeleteBannerDialog] = useState<{ open: boolean; id: string; title: string }>({ open: false, id: "", title: "" });
+const [deletePageDialog, setDeletePageDialog] = useState<{ open: boolean; id: string; title: string }>({ open: false, id: "", title: "" });
   
   // Website Settings State
   const [websiteSettings, setWebsiteSettings] = useState<WebsiteSettings>({
@@ -236,10 +239,8 @@ export function WebsiteManagementView() {
   };
 
   const handleDeleteBanner = (id: string) => {
-    if (confirm("Are you sure you want to delete this banner?")) {
-      setBanners(banners.filter((b) => b.id !== id));
-      toast.success("Banner deleted successfully");
-    }
+    const banner = banners.find((b) => b.id === id);
+    setDeleteBannerDialog({ open: true, id, title: banner?.title || "" });
   };
 
   const handleEditBanner = (banner: WebsiteBanner) => {
@@ -278,10 +279,8 @@ export function WebsiteManagementView() {
   };
 
   const handleDeletePage = (id: string) => {
-    if (confirm("Are you sure you want to delete this page?")) {
-      setPages(pages.filter((p) => p.id !== id));
-      toast.success("Page deleted successfully");
-    }
+    const page = pages.find((p) => p.id === id);
+    setDeletePageDialog({ open: true, id, title: page?.title || "" });
   };
 
   const handleEditPage = (page: WebsitePage) => {
@@ -298,9 +297,10 @@ export function WebsiteManagementView() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-3 sm:p-6">
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
+        {/* CHANGE: header flex wraps on mobile */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
               <Globe className="w-7 h-7 text-blue-600" />
@@ -309,7 +309,8 @@ export function WebsiteManagementView() {
             <p className="text-sm text-gray-600 mt-1">Manage your online store content and settings</p>
           </div>
           <a href={`${window.location.origin}${window.location.pathname}#/storefront`} target="_blank" rel="noopener noreferrer">
-            <Button className="gap-2">
+            {/* CHANGE: button full-width on mobile */}
+            <Button className="gap-2 w-full sm:w-auto">
               <ExternalLink className="w-4 h-4" />
               View Live Website
             </Button>
@@ -318,37 +319,41 @@ export function WebsiteManagementView() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-6 mb-6">
-          <TabsTrigger value="overview">
-            <BarChart3 className="w-4 h-4 mr-2" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="orders">
-            <ShoppingBag className="w-4 h-4 mr-2" />
-            Orders
-          </TabsTrigger>
-          <TabsTrigger value="settings">
-            <Settings className="w-4 h-4 mr-2" />
-            Settings
-          </TabsTrigger>
-          <TabsTrigger value="banners">
-            <ImageIcon className="w-4 h-4 mr-2" />
-            Banners
-          </TabsTrigger>
-          <TabsTrigger value="pages">
-            <FileText className="w-4 h-4 mr-2" />
-            Pages
-          </TabsTrigger>
-          <TabsTrigger value="products">
-            <Package className="w-4 h-4 mr-2" />
-            Products
-          </TabsTrigger>
-        </TabsList>
+        {/* CHANGE: tabs scrollable on mobile instead of fixed grid-cols-6 */}
+        <div className="overflow-x-auto pb-0 mb-6">
+          <TabsList className="flex w-max min-w-full sm:grid sm:w-full sm:grid-cols-6">
+            <TabsTrigger value="overview" className="flex-shrink-0">
+              <BarChart3 className="w-4 h-4 mr-2" />
+              <span className="hidden xs:inline">Overview</span>
+              <span className="xs:hidden">Stats</span>
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="flex-shrink-0">
+              <ShoppingBag className="w-4 h-4 mr-2" />
+              Orders
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex-shrink-0">
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </TabsTrigger>
+            <TabsTrigger value="banners" className="flex-shrink-0">
+              <ImageIcon className="w-4 h-4 mr-2" />
+              Banners
+            </TabsTrigger>
+            <TabsTrigger value="pages" className="flex-shrink-0">
+              <FileText className="w-4 h-4 mr-2" />
+              Pages
+            </TabsTrigger>
+            <TabsTrigger value="products" className="flex-shrink-0">
+              <Package className="w-4 h-4 mr-2" />
+              Products
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
-          {/* Analytics Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {/* CHANGE: analytics grid — 2 cols on mobile, 4 on md+ */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
@@ -406,6 +411,7 @@ export function WebsiteManagementView() {
               <CardDescription>Common website management tasks</CardDescription>
             </CardHeader>
             <CardContent>
+              {/* CHANGE: 2 cols on mobile, 4 on md+ */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Button
                   variant="outline"
@@ -449,7 +455,8 @@ export function WebsiteManagementView() {
               <CardTitle>Popular Products</CardTitle>
               <CardDescription>Top performing products on your website</CardDescription>
             </CardHeader>
-            <CardContent>
+            {/* CHANGE: horizontal scroll wrapper for table on small screens */}
+            <CardContent className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -681,6 +688,7 @@ export function WebsiteManagementView() {
               <CardDescription>Customize your website appearance</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* CHANGE: 1 col on mobile, 3 on md+ */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="primaryColor">Primary Color</Label>
@@ -812,6 +820,7 @@ export function WebsiteManagementView() {
               <CardDescription>Configure shipping and payment options</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* CHANGE: 1 col on mobile, 3 on md+ */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="shippingFee">Shipping Fee (£)</Label>
@@ -863,7 +872,8 @@ export function WebsiteManagementView() {
           </Card>
 
           <div className="flex justify-end">
-            <Button onClick={handleSaveSettings} size="lg" className="gap-2">
+            {/* CHANGE: full-width on mobile */}
+            <Button onClick={handleSaveSettings} size="lg" className="gap-2 w-full sm:w-auto">
               <Save className="w-4 h-4" />
               Save All Settings
             </Button>
@@ -874,12 +884,14 @@ export function WebsiteManagementView() {
         <TabsContent value="banners" className="space-y-6">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              {/* CHANGE: header wraps on mobile */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <CardTitle>Homepage Banners</CardTitle>
                   <CardDescription>Manage promotional banners on your homepage</CardDescription>
                 </div>
                 <Button
+                  className="w-full sm:w-auto"
                   onClick={() => {
                     setEditingBanner(null);
                     setBannerForm({
@@ -903,9 +915,10 @@ export function WebsiteManagementView() {
                 {banners.map((banner) => (
                   <Card key={banner.id}>
                     <CardContent className="pt-6">
-                      <div className="flex gap-4">
+                      {/* CHANGE: banner card stacks on mobile */}
+                      <div className="flex flex-col sm:flex-row gap-4">
                         <div
-                          className="w-48 h-32 rounded-lg bg-cover bg-center flex-shrink-0"
+                          className="w-full sm:w-48 h-40 sm:h-32 rounded-lg bg-cover bg-center flex-shrink-0"
                           style={{ backgroundImage: `url(${banner.imageUrl})` }}
                         />
                         <div className="flex-1">
@@ -955,12 +968,14 @@ export function WebsiteManagementView() {
         <TabsContent value="pages" className="space-y-6">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              {/* CHANGE: header wraps on mobile */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <CardTitle>Website Pages</CardTitle>
                   <CardDescription>Manage custom pages on your website</CardDescription>
                 </div>
                 <Button
+                  className="w-full sm:w-auto"
                   onClick={() => {
                     setEditingPage(null);
                     setPageForm({
@@ -979,14 +994,15 @@ export function WebsiteManagementView() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
+            {/* CHANGE: horizontal scroll for table on mobile */}
+            <CardContent className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Page Title</TableHead>
-                    <TableHead>Slug</TableHead>
+                    <TableHead className="hidden sm:table-cell">Slug</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Last Updated</TableHead>
+                    <TableHead className="hidden md:table-cell">Last Updated</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -994,7 +1010,7 @@ export function WebsiteManagementView() {
                   {pages.map((page) => (
                     <TableRow key={page.id}>
                       <TableCell className="font-medium">{page.title}</TableCell>
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         <code className="text-sm bg-gray-100 px-2 py-1 rounded">/{page.slug}</code>
                       </TableCell>
                       <TableCell>
@@ -1002,7 +1018,7 @@ export function WebsiteManagementView() {
                           {page.isPublished ? "Published" : "Draft"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm text-gray-600">
+                      <TableCell className="hidden md:table-cell text-sm text-gray-600">
                         {new Date(page.updatedAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
@@ -1039,23 +1055,24 @@ export function WebsiteManagementView() {
               <CardTitle>Website Product Settings</CardTitle>
               <CardDescription>Control which products appear on your website</CardDescription>
             </CardHeader>
-            <CardContent>
+            {/* CHANGE: horizontal scroll for table on mobile */}
+            <CardContent className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Product Name</TableHead>
-                    <TableHead>Category</TableHead>
+                    <TableHead className="hidden sm:table-cell">Category</TableHead>
                     <TableHead>Price</TableHead>
                     <TableHead>Stock</TableHead>
                     <TableHead>Website Visible</TableHead>
-                    <TableHead>Featured</TableHead>
+                    <TableHead className="hidden sm:table-cell">Featured</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {products.slice(0, 10).map((product) => (
                     <TableRow key={product.id}>
                       <TableCell className="font-medium">{product.name}</TableCell>
-                      <TableCell>{product.category}</TableCell>
+                      <TableCell className="hidden sm:table-cell">{product.category}</TableCell>
                       <TableCell>£{product.price.toFixed(2)}</TableCell>
                       <TableCell>
                         <Badge variant={product.stock > 0 ? "default" : "destructive"}>
@@ -1065,7 +1082,7 @@ export function WebsiteManagementView() {
                       <TableCell>
                         <Switch defaultChecked={true} />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         <Switch defaultChecked={false} />
                       </TableCell>
                     </TableRow>
@@ -1078,8 +1095,9 @@ export function WebsiteManagementView() {
       </Tabs>
 
       {/* Banner Dialog */}
+      {/* CHANGE: max-w-2xl constrained, mx-4 on mobile via DialogContent */}
       <Dialog open={isBannerDialogOpen} onOpenChange={setIsBannerDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-full max-w-2xl mx-4 sm:mx-auto max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingBanner ? "Edit Banner" : "Add New Banner"}</DialogTitle>
             <DialogDescription>
@@ -1114,7 +1132,8 @@ export function WebsiteManagementView() {
                 placeholder="https://example.com/banner.jpg"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            {/* CHANGE: stacks on mobile */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="buttonText">Button Text</Label>
                 <Input
@@ -1143,11 +1162,12 @@ export function WebsiteManagementView() {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsBannerDialogOpen(false)}>
+          {/* CHANGE: footer buttons stack on mobile */}
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => setIsBannerDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={editingBanner ? handleUpdateBanner : handleAddBanner}>
+            <Button className="w-full sm:w-auto" onClick={editingBanner ? handleUpdateBanner : handleAddBanner}>
               {editingBanner ? "Update" : "Add"} Banner
             </Button>
           </DialogFooter>
@@ -1156,7 +1176,7 @@ export function WebsiteManagementView() {
 
       {/* Page Dialog */}
       <Dialog open={isPageDialogOpen} onOpenChange={setIsPageDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-full max-w-3xl mx-4 sm:mx-auto max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingPage ? "Edit Page" : "Create New Page"}</DialogTitle>
             <DialogDescription>
@@ -1164,7 +1184,8 @@ export function WebsiteManagementView() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            {/* CHANGE: stacks on mobile */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="pageTitle">Page Title *</Label>
                 <Input
@@ -1224,16 +1245,81 @@ export function WebsiteManagementView() {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsPageDialogOpen(false)}>
+          {/* CHANGE: footer buttons stack on mobile */}
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => setIsPageDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={editingPage ? handleUpdatePage : handleAddPage}>
+            <Button className="w-full sm:w-auto" onClick={editingPage ? handleUpdatePage : handleAddPage}>
               {editingPage ? "Update" : "Create"} Page
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Banner Dialog */}
+<Dialog open={deleteBannerDialog.open} onOpenChange={(o) => !o && setDeleteBannerDialog({ open: false, id: "", title: "" })}>
+  <DialogContent className="w-[90vw] sm:max-w-[400px]">
+    <DialogHeader>
+      <DialogTitle className="flex items-center gap-2 text-red-600">
+        <Trash2 className="w-5 h-5" />
+        Delete Banner
+      </DialogTitle>
+      <DialogDescription>
+        Are you sure you want to delete <strong>"{deleteBannerDialog.title}"</strong>? This action cannot be undone.
+      </DialogDescription>
+    </DialogHeader>
+    <DialogFooter className="gap-2 flex-col sm:flex-row pt-2">
+      <Button variant="outline" className="w-full sm:w-auto" onClick={() => setDeleteBannerDialog({ open: false, id: "", title: "" })}>
+        Cancel
+      </Button>
+      <Button
+        variant="destructive"
+        className="w-full sm:w-auto"
+        onClick={() => {
+          setBanners(banners.filter((b) => b.id !== deleteBannerDialog.id));
+          toast.success("Banner deleted successfully");
+          setDeleteBannerDialog({ open: false, id: "", title: "" });
+        }}
+      >
+        <Trash2 className="w-4 h-4 mr-2" />
+        Delete
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+
+{/* Delete Page Dialog */}
+<Dialog open={deletePageDialog.open} onOpenChange={(o) => !o && setDeletePageDialog({ open: false, id: "", title: "" })}>
+  <DialogContent className="w-[90vw] sm:max-w-[400px]">
+    <DialogHeader>
+      <DialogTitle className="flex items-center gap-2 text-red-600">
+        <Trash2 className="w-5 h-5" />
+        Delete Page
+      </DialogTitle>
+      <DialogDescription>
+        Are you sure you want to delete <strong>"{deletePageDialog.title}"</strong>? This action cannot be undone.
+      </DialogDescription>
+    </DialogHeader>
+    <DialogFooter className="gap-2 flex-col sm:flex-row pt-2">
+      <Button variant="outline" className="w-full sm:w-auto" onClick={() => setDeletePageDialog({ open: false, id: "", title: "" })}>
+        Cancel
+      </Button>
+      <Button
+        variant="destructive"
+        className="w-full sm:w-auto"
+        onClick={() => {
+          setPages(pages.filter((p) => p.id !== deletePageDialog.id));
+          toast.success("Page deleted successfully");
+          setDeletePageDialog({ open: false, id: "", title: "" });
+        }}
+      >
+        <Trash2 className="w-4 h-4 mr-2" />
+        Delete
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
     </div>
   );
 }

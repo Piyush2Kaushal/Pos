@@ -13,7 +13,7 @@ import {
 import {
   CheckCircle2, AlertTriangle, Loader2, Search, Upload, FileText,
   ChevronLeft, ChevronRight, Trash2, Download, Archive, Tag, X, Plus,
-  Building2, Hash, DollarSign, CreditCard, ZoomIn, ZoomOut, Scan,
+  Building2, Hash, PoundSterling, CreditCard, ZoomIn, ZoomOut, Scan,
   Inbox, Receipt, Info,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -939,7 +939,7 @@ export function DocumentCaptureDialog({ open, onClose, suppliers, onCreatePO }: 
                       { icon: <Hash className="w-3 h-3" />, label: "Invoice #", val: selectedDoc.invoiceNumber, conf: "invoiceNumber" },
                       { icon: <Building2 className="w-3 h-3" />, label: "Supplier", val: selectedDoc.supplierName, conf: "supplierName" },
                       { icon: <CreditCard className="w-3 h-3" />, label: "Bill Date", val: selectedDoc.billDate, conf: "billDate" },
-                      { icon: <DollarSign className="w-3 h-3" />, label: "Total", val: `${sym(selectedDoc)}${selectedDoc.total.toFixed(2)}`, conf: "total" },
+                      { icon: <PoundSterling className="w-3 h-3" />, label: "Total", val: `${sym(selectedDoc)}${selectedDoc.total.toFixed(2)}`, conf: "total" },
                     ].map(({ icon, label, val, conf }) => (
                       <div key={label} className="flex items-center gap-2 text-gray-600">
                         <span className="text-gray-400">{icon}</span>

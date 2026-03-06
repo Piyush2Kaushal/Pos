@@ -229,7 +229,79 @@ export function CustomerOrdersView() {
   };
 
   const handlePrint = () => {
-    window.print();
+    const labelEl = document.getElementById("dispatch-label-print");
+    if (!labelEl) {
+      toast.error("Label content not found");
+      return;
+    }
+
+    // Clone all current page stylesheets so Tailwind classes render in the print window
+    const styleSheets = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+      .map((node) => node.outerHTML)
+      .join("\n");
+
+    const printWindow = window.open("", "_blank", "width=650,height=900");
+    if (!printWindow) {
+      toast.error("Popup blocked — please allow popups for printing");
+      return;
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Dispatch Label – ${labelOrder?.orderNumber || ""}</title>
+          ${styleSheets}
+          <style>
+            html, body {
+              margin: 0;
+              padding: 12mm;
+              background: #fff;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              color-adjust: exact !important;
+            }
+            @media print {
+              html, body {
+                padding: 0;
+              }
+              @page {
+                margin: 8mm;
+                size: A5;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div style="max-width: 500px; margin: 0 auto;">
+            ${labelEl.innerHTML}
+          </div>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+
+    // Wait for all styles/fonts to load, then trigger print
+    const triggerPrint = () => {
+      printWindow.focus();
+      printWindow.print();
+      // Close the window after a short delay to allow print dialog to complete
+      setTimeout(() => {
+        try { printWindow.close(); } catch (_) { /* already closed */ }
+      }, 1000);
+    };
+
+    // Use onload for reliability, with a fallback timeout
+    if (printWindow.document.readyState === "complete") {
+      setTimeout(triggerPrint, 500);
+    } else {
+      printWindow.onload = () => setTimeout(triggerPrint, 500);
+      // Fallback in case onload doesn't fire (some browsers)
+      setTimeout(triggerPrint, 2000);
+    }
+
+    toast.success("Print dialog opened");
   };
 
   const copyTracking = (num: string) => {
@@ -263,17 +335,9 @@ export function CustomerOrdersView() {
   return (
     <div className="h-full overflow-y-auto bg-gray-50">
 
-      {/* ── Print styles (hidden on screen, shown on print) ── */}
-      <style>{`
-        @media print {
-          body > * { display: none !important; }
-          #dispatch-label-print { display: block !important; }
-          @page { margin: 10mm; size: A5; }
-        }
-        #dispatch-label-print { display: none; }
-      `}</style>
+   
 
-      <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+      <div className=" mx-auto px-6 py-6 space-y-6">
 
         {/* ── Page Header ── */}
         <div className="flex items-center justify-between flex-wrap gap-4">
@@ -366,7 +430,7 @@ export function CustomerOrdersView() {
           {/* Search row */}
           <div className="flex items-center gap-3 p-3">
             <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 z-10 pointer-events-none" />
               <Input placeholder="Search order #, customer, tracking…" value={search}
                 onChange={e => setSearch(e.target.value)} className="pl-9 h-9 text-sm"/>
             </div>
@@ -405,10 +469,10 @@ export function CustomerOrdersView() {
                   {/* ── Row header ── */}
                   <div className="flex items-center gap-4 p-4 flex-wrap">
                     {/* Checkbox */}
-                    <input type="checkbox" checked={selectedIds.has(order.id)}
+                    {/* <input type="checkbox" checked={selectedIds.has(order.id)}
                       onChange={() => toggleSelect(order.id)}
                       className="w-4 h-4 rounded border-gray-300 accent-blue-600 shrink-0"
-                    />
+                    /> */}
 
                     {/* Order number + status */}
                     <div className="flex items-center gap-2 min-w-[140px]">
@@ -667,7 +731,7 @@ export function CustomerOrdersView() {
                   <Label className="text-sm font-medium">Carrier *</Label>
                   <Select value={trackingForm.trackingCarrier} onValueChange={v => setTrackingForm(f => ({...f, trackingCarrier: v}))}>
                     <SelectTrigger className="h-9"><SelectValue placeholder="Select carrier"/></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className='bg-white'>
                       {CARRIERS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                     </SelectContent>
                   </Select>

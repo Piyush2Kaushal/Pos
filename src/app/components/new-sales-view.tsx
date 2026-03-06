@@ -13,7 +13,7 @@ import {
   FileText,
   X,
   Save,
-  DollarSign,
+  PoundSterling,
   Edit,
   Scan,
   PackagePlus,
@@ -32,6 +32,8 @@ import {
   Star,
   ChevronRight,
   BadgeCheck,
+  Menu,
+  ChevronDown,
 } from "lucide-react";
 import { Input } from "@/app/components/ui/input";
 import { Button } from "@/app/components/ui/button";
@@ -62,6 +64,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/app/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/app/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import { Product, Customer, Invoice, InvoiceLineItem } from "@/app/types";
 import { toast } from "sonner";
@@ -181,25 +190,23 @@ export function NewSalesView() {
   // Add product to sale
   const addProductToSale = (product: Product) => {
     const existingItem = lineItems.find(item => item.product.id === product.id);
-    
+
     if (existingItem) {
-      // Increase quantity
       if (existingItem.quantity < product.stock) {
         updateLineItem(lineItems.indexOf(existingItem), "quantity", existingItem.quantity + 1);
       } else {
         toast.error("Insufficient stock");
       }
     } else {
-      // Add new item
       const price = selectedCustomer ? getProductPrice(product) : product.retailPrice;
       const newItem: SaleLineItem = {
         id: `item-${Date.now()}-${Math.random()}`,
         description: product.name,
         quantity: 1,
         unitPrice: price,
-        taxRate: 20, // VAT 20%
+        taxRate: 20,
         discount: 0,
-        amount: price * 1.2, // including 20% VAT
+        amount: price * 1.2,
         productId: product.id,
         product: product,
       };
@@ -221,7 +228,6 @@ export function NewSalesView() {
         (item as any)[field] = value;
       }
 
-      // Recalculate amount
       const subtotal = item.quantity * item.unitPrice;
       const afterDiscount = subtotal * (1 - item.discount / 100);
       item.amount = afterDiscount * (1 + item.taxRate / 100);
@@ -275,7 +281,6 @@ export function NewSalesView() {
     const afterDiscount = subtotal * (1 - disc / 100);
     const amount = afterDiscount * (1 + tax / 100);
 
-    // Build a virtual product stub so the line item structure stays consistent
     const customId = `custom-${Date.now()}`;
     const virtualProduct: Product = {
       id: customId,
@@ -471,19 +476,32 @@ export function NewSalesView() {
     toast.success(`Draft "${draft.invoiceNumber}" loaded into the form`);
   };
 
+  const [deleteDraftDialog, setDeleteDraftDialog] = useState<{ open: boolean; id: string | null }>({
+    open: false,
+    id: null,
+  });
+  
   const deleteDraft = (id: string) => {
-    if (!confirm("Delete this draft?")) return;
-    deleteInvoice(id);
-    toast.success("Draft deleted");
+    setDeleteDraftDialog({ open: true, id });
+  };
+  
+  const confirmDeleteDraft = () => {
+    if (deleteDraftDialog.id) {
+      deleteInvoice(deleteDraftDialog.id);
+      toast.success("Draft deleted");
+    }
+    setDeleteDraftDialog({ open: false, id: null });
   };
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto">
+    <div className="p-3 sm:p-4 lg:p-6 max-w-[1600px] mx-auto">
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">Quick Action</h2>
-          <div className="flex items-center gap-3">
+      <div className="mb-4 sm:mb-6">
+        <div className="flex items-center justify-between mb-4 gap-3">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 shrink-0">Quick Action</h2>
+
+          {/* Desktop action buttons — hidden on mobile/tablet */}
+          <div className="hidden xl:flex items-center gap-3 flex-wrap justify-end">
             <Button
               variant="outline"
               size="sm"
@@ -520,7 +538,6 @@ export function NewSalesView() {
               <ShoppingCart className="w-4 h-4 text-orange-600" />
               Today Sales
             </Button>
-            {/* Draft Sales button */}
             <Button
               variant="outline"
               size="sm"
@@ -554,24 +571,127 @@ export function NewSalesView() {
               Dashboard
             </Button>
           </div>
+
+          {/* Tablet action buttons — md to xl */}
+          <div className="hidden md:flex xl:hidden items-center gap-2 flex-wrap justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 hover:bg-indigo-50 hover:border-indigo-600 text-xs px-2.5"
+              onClick={() => setCustomProductDialog(true)}
+            >
+              <PackagePlus className="w-3.5 h-3.5 text-indigo-600" />
+              Custom
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 hover:bg-blue-50 hover:border-blue-600 text-xs px-2.5"
+              onClick={() => setProductListOpen(true)}
+            >
+              <Package className="w-3.5 h-3.5 text-blue-600" />
+              Products
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 hover:bg-amber-50 hover:border-amber-500 relative text-xs px-2.5"
+              onClick={() => setDraftDialogOpen(true)}
+            >
+              <ClipboardList className="w-3.5 h-3.5 text-amber-600" />
+              Drafts
+              {draftInvoices.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] bg-amber-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 shadow">
+                  {draftInvoices.length}
+                </span>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 hover:bg-slate-50 hover:border-slate-400 text-xs px-2.5"
+              onClick={() => setCustomerSearchOpen(true)}
+            >
+              <UserSearch className="w-3.5 h-3.5 text-slate-600" />
+              Customer
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="gap-1.5 text-xs px-2.5"
+              onClick={() => navigate("/")}
+            >
+              <AlertCircle className="w-3.5 h-3.5" />
+              Dashboard
+            </Button>
+          </div>
+
+          {/* Mobile: hamburger dropdown */}
+          <div className="flex md:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Menu className="w-4 h-4" />
+                  Actions
+                  <ChevronDown className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem onClick={() => navigate("/products")}>
+                  <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                  Add New Product
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setCustomProductDialog(true)}>
+                  <PackagePlus className="w-4 h-4 mr-2 text-indigo-600" />
+                  Custom Product
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setProductListOpen(true)}>
+                  <Package className="w-4 h-4 mr-2 text-blue-600" />
+                  Product List
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/reports")}>
+                  <ShoppingCart className="w-4 h-4 mr-2 text-orange-600" />
+                  Today Sales
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setDraftDialogOpen(true)}>
+                  <ClipboardList className="w-4 h-4 mr-2 text-amber-600" />
+                  Draft Sales
+                  {draftInvoices.length > 0 && (
+                    <span className="ml-auto min-w-[18px] h-[18px] bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                      {draftInvoices.length}
+                    </span>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setCustomerSearchOpen(true)}>
+                  <UserSearch className="w-4 h-4 mr-2 text-slate-600" />
+                  Search Customer
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("/")} className="text-red-600">
+                  <AlertCircle className="w-4 h-4 mr-2" />
+                  Dashboard
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-3 sm:p-4 lg:p-6">
           {/* Top Form Section */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-3 sm:mb-4">
             {/* Product Search */}
-            <div className="relative">
+            <div className="relative sm:col-span-2 lg:col-span-1">
               <Label className="mb-2 block">Search product...</Label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 z-10 pointer-events-none" />
                 <Input
                   type="text"
                   placeholder="Search product..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 bg-white"
                 />
               </div>
               {/* Product Search Dropdown */}
@@ -595,7 +715,6 @@ export function NewSalesView() {
                           <Package className="w-5 h-5 text-gray-300" />
                         )}
                       </div>
-
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-900 truncate">{product.name}</p>
@@ -607,7 +726,6 @@ export function NewSalesView() {
                           </p>
                         </div>
                       </div>
-
                       {/* Price + category */}
                       <div className="shrink-0 text-right">
                         <p className="font-semibold text-green-600">
@@ -627,36 +745,72 @@ export function NewSalesView() {
             <div>
               <Label className="mb-2 block">Select Customer</Label>
               <Select
-                value={selectedCustomer?.id || ""}
-                onValueChange={(value) => {
-                  const customer = customers.find(c => c.id === value);
-                  setSelectedCustomer(customer || null);
-                  // Update prices for existing items
-                  if (customer) {
-                    setLineItems(prev => prev.map(item => {
-                      const price = getProductPrice(item.product);
-                      const subtotal = item.quantity * price;
-                      const afterDiscount = subtotal * (1 - item.discount / 100);
-                      return {
-                        ...item,
-                        unitPrice: price,
-                        amount: afterDiscount * (1 + item.taxRate / 100),
-                      };
-                    }));
-                  }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select customer" />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers.map(customer => (
-                    <SelectItem key={customer.id} value={customer.id}>
-                      {customer.name} ({customer.type})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+  value={selectedCustomer?.id || ""}
+  onValueChange={(value) => {
+    const customer = customers.find(c => c.id === value);
+    setSelectedCustomer(customer || null);
+    if (customer) {
+      setLineItems(prev => prev.map(item => {
+        const price = getProductPrice(item.product);
+        const subtotal = item.quantity * price;
+        const afterDiscount = subtotal * (1 - item.discount / 100);
+        return {
+          ...item,
+          unitPrice: price,
+          amount: afterDiscount * (1 + item.taxRate / 100),
+        };
+      }));
+    }
+  }}
+>
+  <SelectTrigger>
+    {selectedCustomer ? (
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center text-white text-[10px] font-bold">
+          {selectedCustomer.name.charAt(0).toUpperCase()}
+        </div>
+        <span className="truncate text-sm text-gray-900">{selectedCustomer.name}</span>
+        <span className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full border font-medium capitalize ${
+          selectedCustomer.type === "wholesaler" ? "bg-purple-100 text-purple-700 border-purple-200" :
+          selectedCustomer.type === "trader" ? "bg-blue-100 text-blue-700 border-blue-200" :
+          "bg-green-100 text-green-700 border-green-200"
+        }`}>
+          {selectedCustomer.type}
+        </span>
+      </div>
+    ) : (
+      <span className="text-gray-400 text-sm">Select customer...</span>
+    )}
+  </SelectTrigger>
+  <SelectContent className="bg-white border border-gray-200 shadow-xl rounded-xl p-1 max-h-64">
+    {customers.map(customer => {
+      const typeColour =
+        customer.type === "wholesaler" ? "bg-purple-100 text-purple-700 border-purple-200" :
+        customer.type === "trader" ? "bg-blue-100 text-blue-700 border-blue-200" :
+        "bg-green-100 text-green-700 border-green-200";
+      return (
+        <SelectItem
+          key={customer.id}
+          value={customer.id}
+          className="rounded-lg px-3 py-2 cursor-pointer hover:bg-gray-50 focus:bg-blue-50 data-[highlighted]:bg-blue-50 data-[state=checked]:bg-blue-50"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-slate-300 to-slate-500 flex items-center justify-center text-white text-xs font-bold">
+              {customer.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-900 truncate">{customer.name}</p>
+              <p className="text-[10px] text-gray-400">{customer.phone || customer.email || "No contact"}</p>
+            </div>
+            <span className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full border font-medium capitalize ${typeColour}`}>
+              {customer.type}
+            </span>
+          </div>
+        </SelectItem>
+      );
+    })}
+  </SelectContent>
+</Select>
             </div>
 
             {/* Invoice Number */}
@@ -672,9 +826,9 @@ export function NewSalesView() {
           </div>
 
           {/* Barcode Scanner + Date fields row */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
             {/* Barcode Scanner spans 2 cols */}
-            <div className="md:col-span-2">
+            <div className="sm:col-span-2">
               <Label className="mb-2 flex items-center gap-1.5">
                 <Scan className="w-3.5 h-3.5 text-blue-600" />
                 Barcode Scanner
@@ -714,63 +868,167 @@ export function NewSalesView() {
             </div>
           </div>
 
-          {/* Line Items Table */}
-          <div className="mb-6 border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader className="bg-gray-100">
-                <TableRow>
-                  <TableHead className="w-12">SNo</TableHead>
-                  <TableHead>Items</TableHead>
-                  <TableHead>Code</TableHead>
-                  <TableHead className="w-24">Unit</TableHead>
-                  <TableHead className="w-24">Qty</TableHead>
-                  <TableHead className="text-right">Sale Price</TableHead>
-                  <TableHead className="text-right w-28">Discount (%)</TableHead>
-                  <TableHead className="text-right">Vat Include (20%)</TableHead>
-                  <TableHead className="text-right">Sub Total</TableHead>
-                  <TableHead className="w-20">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {lineItems.length > 0 ? (
-                  lineItems.map((item, index) => (
-                    <TableRow key={item.id}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell 
-                        className="font-medium text-blue-600 cursor-pointer hover:text-blue-800 hover:underline"
-                        onClick={() => openPriceDialog(index, item)}
+          {/* Line Items Table — desktop */}
+          <div className="mb-4 sm:mb-6 border rounded-lg overflow-hidden hidden md:block">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-gray-100">
+                  <TableRow>
+                    <TableHead className="w-12">SNo</TableHead>
+                    <TableHead>Items</TableHead>
+                    <TableHead>Code</TableHead>
+                    <TableHead className="w-24">Unit</TableHead>
+                    <TableHead className="w-24">Qty</TableHead>
+                    <TableHead className="text-right">Sale Price</TableHead>
+                    <TableHead className="text-right w-28">Discount (%)</TableHead>
+                    <TableHead className="text-right">Vat Include (20%)</TableHead>
+                    <TableHead className="text-right">Sub Total</TableHead>
+                    <TableHead className="w-20">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {lineItems.length > 0 ? (
+                    lineItems.map((item, index) => (
+                      <TableRow key={item.id}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell
+                          className="font-medium text-blue-600 cursor-pointer hover:text-blue-800 hover:underline"
+                          onClick={() => openPriceDialog(index, item)}
+                        >
+                          {item.description}
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-600">{item.product.id}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">Pcs</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            min="1"
+                            max={item.product.stock}
+                            value={item.quantity}
+                            onChange={(e) => updateLineItem(index, "quantity", parseInt(e.target.value) || 1)}
+                            className="w-20"
+                          />
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">
+                          <div className="flex items-center justify-end gap-1">
+                            £{item.unitPrice.toFixed(2)}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              onClick={() => openPriceDialog(index, item)}
+                              title="Edit price"
+                            >
+                              <Edit className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.1"
+                            value={item.discount}
+                            onChange={(e) => updateLineItem(index, "discount", parseFloat(e.target.value) || 0)}
+                            className="w-24 text-right"
+                            placeholder="0"
+                          />
+                        </TableCell>
+                        <TableCell className="text-right text-green-600">
+                          £{getVatIncludedPrice(item).toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-right font-bold text-blue-600">
+                          £{item.amount.toFixed(2)}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => removeLineItem(index)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={10} className="text-center py-12 text-gray-500">
+                        <ShoppingCart className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                        <p>No items added yet. Search and add products above.</p>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+
+          {/* Line Items — Mobile card layout */}
+          <div className="mb-4 md:hidden">
+            {lineItems.length === 0 ? (
+              <div className="border rounded-lg text-center py-10 text-gray-500">
+                <ShoppingCart className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No items added yet. Search and add products above.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {lineItems.map((item, index) => (
+                  <div key={item.id} className="border rounded-xl p-3 bg-white shadow-sm">
+                    {/* Item header */}
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center">
+                          {index + 1}
+                        </span>
+                        <button
+                          className="font-medium text-blue-600 text-sm text-left truncate hover:underline"
+                          onClick={() => openPriceDialog(index, item)}
+                        >
+                          {item.description}
+                        </button>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="shrink-0 text-red-500 hover:text-red-600 hover:bg-red-50 h-7 w-7 p-0"
+                        onClick={() => removeLineItem(index)}
                       >
-                        {item.description}
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-600">{item.product.id}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">Pcs</Badge>
-                      </TableCell>
-                      <TableCell>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+
+                    {/* Item details grid */}
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">Qty</p>
                         <Input
                           type="number"
                           min="1"
                           max={item.product.stock}
                           value={item.quantity}
                           onChange={(e) => updateLineItem(index, "quantity", parseInt(e.target.value) || 1)}
-                          className="w-20"
+                          className="h-8 text-sm"
                         />
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        <div className="flex items-center justify-end gap-1">
-                          £{item.unitPrice.toFixed(2)}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">Sale Price</p>
+                        <div className="flex items-center gap-1">
+                          <span className="font-semibold text-gray-800">£{item.unitPrice.toFixed(2)}</span>
+                          <button
+                            className="text-blue-500 hover:text-blue-700"
                             onClick={() => openPriceDialog(index, item)}
-                            title="Edit price"
                           >
                             <Edit className="w-3 h-3" />
-                          </Button>
+                          </button>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-right">
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">Discount (%)</p>
                         <Input
                           type="number"
                           min="0"
@@ -778,45 +1036,32 @@ export function NewSalesView() {
                           step="0.1"
                           value={item.discount}
                           onChange={(e) => updateLineItem(index, "discount", parseFloat(e.target.value) || 0)}
-                          className="w-24 text-right"
+                          className="h-8 text-sm"
                           placeholder="0"
                         />
-                      </TableCell>
-                      <TableCell className="text-right text-green-600">
-                        £{getVatIncludedPrice(item).toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right font-bold text-blue-600">
-                        £{item.amount.toFixed(2)}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => removeLineItem(index)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={10} className="text-center py-12 text-gray-500">
-                      <ShoppingCart className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p>No items added yet. Search and add products above.</p>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">VAT (20%)</p>
+                        <span className="text-green-600 font-medium">£{getVatIncludedPrice(item).toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    {/* Subtotal footer */}
+                    <div className="mt-3 pt-2 border-t flex items-center justify-between">
+                      <span className="text-xs text-gray-400">Subtotal (inc. VAT)</span>
+                      <span className="font-bold text-blue-600">£{item.amount.toFixed(2)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Summary Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
             {/* Left Side - Stats */}
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-gray-600">
@@ -841,7 +1086,7 @@ export function NewSalesView() {
               </div>
 
               {/* Payment Details */}
-              <div className="space-y-3 border rounded-lg p-4">
+              <div className="space-y-3 border rounded-lg p-3 sm:p-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-sm">Receive Amount</Label>
@@ -929,7 +1174,7 @@ export function NewSalesView() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl font-bold">
+                  <div className="text-3xl sm:text-4xl font-bold">
                     £{calculations.total.toFixed(2)}
                   </div>
                   {calculations.totalDiscount > 0 && (
@@ -971,35 +1216,38 @@ export function NewSalesView() {
           </div>
 
           {/* Action Buttons */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
             <Button
               size="lg"
               variant="outline"
-              className="bg-orange-500 hover:bg-orange-600 text-white border-orange-500 hover:border-orange-600"
+              className="bg-orange-500 hover:bg-orange-600 text-white border-orange-500 hover:border-orange-600 text-sm sm:text-base px-2 sm:px-4"
               onClick={resetForm}
             >
-              <X className="w-5 h-5 mr-2" />
-              Cancel
+              <X className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 shrink-0" />
+              <span className="hidden sm:inline">Cancel</span>
+              <span className="sm:hidden">Clear</span>
             </Button>
 
             <Button
               size="lg"
-              className="bg-purple-600 hover:bg-purple-700 text-white"
+              className="bg-purple-600 hover:bg-purple-700 text-white text-sm sm:text-base px-2 sm:px-4"
               onClick={handleSaveToDraft}
               disabled={lineItems.length === 0 || !selectedCustomer}
             >
-              <Save className="w-5 h-5 mr-2" />
-              Save to Draft
+              <Save className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 shrink-0" />
+              <span className="hidden sm:inline">Save to Draft</span>
+              <span className="sm:hidden">Draft</span>
             </Button>
 
             <Button
               size="lg"
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-red-600 hover:bg-red-700 text-white text-sm sm:text-base px-2 sm:px-4"
               onClick={handleCreateInvoice}
               disabled={lineItems.length === 0 || !selectedCustomer}
             >
-              <FileText className="w-5 h-5 mr-2" />
-              Create Invoice
+              <FileText className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 shrink-0" />
+              <span className="hidden sm:inline">Create Invoice</span>
+              <span className="sm:hidden">Invoice</span>
             </Button>
           </div>
         </CardContent>
@@ -1007,7 +1255,7 @@ export function NewSalesView() {
 
       {/* ════ DRAFT SALES DIALOG ════ */}
       <Dialog open={draftDialogOpen} onOpenChange={setDraftDialogOpen}>
-        <DialogContent className="sm:max-w-[680px] max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogContent className="w-[95vw] sm:w-auto sm:max-w-[680px] max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ClipboardList className="w-5 h-5 text-amber-600" />
@@ -1028,7 +1276,7 @@ export function NewSalesView() {
               <div className="flex flex-col items-center justify-center py-16 text-gray-400">
                 <ClipboardList className="w-14 h-14 mb-3 opacity-25" />
                 <p className="font-medium">No recent draft sales</p>
-                <p className="text-sm mt-1">Drafts are kept for 6 days. Save a sale as draft and it will appear here.</p>
+                <p className="text-sm mt-1 text-center">Drafts are kept for 6 days. Save a sale as draft and it will appear here.</p>
               </div>
             ) : (
               draftInvoices.map(draft => {
@@ -1038,29 +1286,29 @@ export function NewSalesView() {
                 return (
                   <div
                     key={draft.id}
-                    className="flex items-center gap-4 border border-gray-200 rounded-xl px-4 py-3 hover:border-amber-300 hover:bg-amber-50/40 transition-colors group"
+                    className="flex items-center gap-2 sm:gap-4 border border-gray-200 rounded-xl px-3 sm:px-4 py-3 hover:border-amber-300 hover:bg-amber-50/40 transition-colors group"
                   >
                     {/* Icon */}
-                    <div className="shrink-0 w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-amber-600" />
+                    <div className="shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                      <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
                     </div>
 
                     {/* Details */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-gray-900 truncate">{draft.invoiceNumber}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-gray-900 truncate text-sm">{draft.invoiceNumber}</p>
                         <span className="text-[10px] bg-amber-100 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5 font-medium uppercase tracking-wide">Draft</span>
                       </div>
-                      <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500 flex-wrap">
+                      <div className="flex items-center gap-2 sm:gap-3 mt-0.5 text-xs text-gray-500 flex-wrap">
                         <span className="flex items-center gap-1">
                           <Users className="w-3 h-3" />
-                          {draft.customer?.name ?? "No customer"}
+                          <span className="truncate max-w-[80px] sm:max-w-none">{draft.customer?.name ?? "No customer"}</span>
                         </span>
                         <span className="flex items-center gap-1">
                           <Package className="w-3 h-3" />
                           {itemCount} item{itemCount !== 1 ? "s" : ""}
                         </span>
-                        <span className="flex items-center gap-1">
+                        <span className="hidden sm:flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {format(createdAt, "dd MMM yyyy, HH:mm")}
                         </span>
@@ -1068,20 +1316,20 @@ export function NewSalesView() {
                     </div>
 
                     {/* Amount */}
-                    <div className="shrink-0 text-right">
+                    <div className="shrink-0 text-right hidden sm:block">
                       <p className="font-bold text-gray-800">£{total.toFixed(2)}</p>
                       <p className="text-xs text-gray-400">Total</p>
                     </div>
 
                     {/* Actions */}
-                    <div className="shrink-0 flex items-center gap-1.5">
+                    <div className="shrink-0 flex items-center gap-1 sm:gap-1.5">
                       <Button
                         size="sm"
-                        className="gap-1.5 bg-amber-500 hover:bg-amber-600 text-white h-8 px-3"
+                        className="gap-1 sm:gap-1.5 bg-amber-500 hover:bg-amber-600 text-white h-8 px-2 sm:px-3 text-xs"
                         onClick={() => loadDraft(draft)}
                       >
-                        <FolderOpen className="w-3.5 h-3.5" />
-                        Load
+                        <FolderOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                        <span className="hidden sm:inline">Load</span>
                       </Button>
                       <Button
                         size="sm"
@@ -1107,12 +1355,12 @@ export function NewSalesView() {
 
       {/* ════ PRODUCT LIST DIALOG ════ */}
       <Dialog open={productListOpen} onOpenChange={(o) => { setProductListOpen(o); if (!o) { setProductListQuery(""); setProductListCategory("all"); } }}>
-        <DialogContent className="sm:max-w-[720px] max-h-[85vh] overflow-hidden flex flex-col p-0 gap-0">
+        <DialogContent className="w-[95vw] sm:w-auto sm:max-w-[720px] max-h-[85vh] overflow-hidden flex flex-col p-0 gap-0">
           <DialogTitle className="sr-only">Product List</DialogTitle>
           <DialogDescription className="sr-only">Browse all products, filter by category, and view full product details.</DialogDescription>
 
           {/* Header */}
-          <div className="px-6 pt-5 pb-4 border-b bg-white">
+          <div className="px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b bg-white">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                 <Package className="w-4 h-4 text-blue-600" />
@@ -1137,7 +1385,7 @@ export function NewSalesView() {
                 )}
               </div>
               <Select value={productListCategory} onValueChange={setProductListCategory}>
-                <SelectTrigger className="w-40 h-9">
+                <SelectTrigger className="w-32 sm:w-40 h-9">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1151,7 +1399,7 @@ export function NewSalesView() {
           </div>
 
           {/* Product grid */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4">
             {(() => {
               const q = productListQuery.toLowerCase();
               const filtered = products.filter(p => {
@@ -1167,34 +1415,31 @@ export function NewSalesView() {
                 </div>
               );
               return (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                   {filtered.map(prod => {
                     const stockStatus = prod.stock === 0 ? "out" : prod.stock <= 10 ? "low" : "ok";
                     const stockColour = { out: "text-red-500 bg-red-50 border-red-200", low: "text-amber-600 bg-amber-50 border-amber-200", ok: "text-emerald-600 bg-emerald-50 border-emerald-200" }[stockStatus];
                     return (
                       <button
                         key={prod.id}
-                        className="text-left bg-white border border-gray-200 rounded-xl p-3 hover:border-blue-400 hover:shadow-md transition-all group flex flex-col gap-2"
+                        className="text-left bg-white border border-gray-200 rounded-xl p-2.5 sm:p-3 hover:border-blue-400 hover:shadow-md transition-all group flex flex-col gap-2"
                         onClick={() => { setViewProduct(prod); setProductListOpen(false); }}
                       >
-                        {/* Image */}
-                        <div className="w-full h-28 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center">
+                        <div className="w-full h-24 sm:h-28 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center">
                           {prod.image ? (
                             <img src={prod.image} alt={prod.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
                           ) : (
                             <Package className="w-10 h-10 text-gray-200" />
                           )}
                         </div>
-                        {/* Info */}
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-900 text-sm truncate leading-tight">{prod.name}</p>
-                          <p className="text-[11px] text-gray-400 mt-0.5">SKU: {prod.sku}</p>
+                          <p className="font-semibold text-gray-900 text-xs sm:text-sm truncate leading-tight">{prod.name}</p>
+                          <p className="text-[10px] sm:text-[11px] text-gray-400 mt-0.5">SKU: {prod.sku}</p>
                         </div>
-                        {/* Footer row */}
                         <div className="flex items-center justify-between gap-1">
-                          <span className="font-bold text-blue-600 text-sm">£{prod.retailPrice.toFixed(2)}</span>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-medium ${stockColour}`}>
-                            {prod.stock === 0 ? "Out of stock" : `${prod.stock} left`}
+                          <span className="font-bold text-blue-600 text-xs sm:text-sm">£{prod.retailPrice.toFixed(2)}</span>
+                          <span className={`text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded-full border font-medium ${stockColour}`}>
+                            {prod.stock === 0 ? "Out" : `${prod.stock}`}
                           </span>
                         </div>
                       </button>
@@ -1205,8 +1450,8 @@ export function NewSalesView() {
             })()}
           </div>
 
-          <div className="px-6 py-3 border-t bg-gray-50 flex justify-between items-center">
-            <p className="text-xs text-gray-400">Click a product to view full details</p>
+          <div className="px-4 sm:px-6 py-3 border-t bg-gray-50 flex justify-between items-center">
+            <p className="text-xs text-gray-400 hidden sm:block">Click a product to view full details</p>
             <Button variant="outline" size="sm" onClick={() => { setProductListOpen(false); setProductListQuery(""); setProductListCategory("all"); }}>Close</Button>
           </div>
         </DialogContent>
@@ -1214,7 +1459,7 @@ export function NewSalesView() {
 
       {/* ════ PRODUCT DETAIL POPUP ════ */}
       <Dialog open={!!viewProduct} onOpenChange={(o) => { if (!o) setViewProduct(null); }}>
-        <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0">
+        <DialogContent className="w-[95vw] sm:w-auto sm:max-w-[640px] max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0">
           <DialogTitle className="sr-only">{viewProduct ? `Product – ${viewProduct.name}` : "Product Details"}</DialogTitle>
           <DialogDescription className="sr-only">Full product information including pricing tiers, stock and variants.</DialogDescription>
 
@@ -1227,36 +1472,33 @@ export function NewSalesView() {
             return (
               <>
                 {/* Top image + name bar */}
-                <div className="relative flex gap-5 px-6 pt-6 pb-5 border-b">
-                  {/* Image */}
-                  <div className="shrink-0 w-28 h-28 rounded-2xl bg-gray-50 border border-gray-200 overflow-hidden flex items-center justify-center shadow-sm">
+                <div className="relative flex gap-3 sm:gap-5 px-4 sm:px-6 pt-4 sm:pt-6 pb-4 sm:pb-5 border-b">
+                  <div className="shrink-0 w-20 h-20 sm:w-28 sm:h-28 rounded-2xl bg-gray-50 border border-gray-200 overflow-hidden flex items-center justify-center shadow-sm">
                     {viewProduct.image ? (
                       <img src={viewProduct.image} alt={viewProduct.name} className="w-full h-full object-cover" />
                     ) : (
-                      <Package className="w-12 h-12 text-gray-200" />
+                      <Package className="w-10 h-10 sm:w-12 sm:h-12 text-gray-200" />
                     )}
                   </div>
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <h2 className="font-bold text-gray-900 text-lg leading-tight">{viewProduct.name}</h2>
+                        <h2 className="font-bold text-gray-900 text-base sm:text-lg leading-tight">{viewProduct.name}</h2>
                         <p className="text-xs text-gray-400 mt-0.5">SKU: <span className="font-mono font-semibold text-gray-600">{viewProduct.sku}</span></p>
-                        <p className="text-xs text-gray-400">ID: <span className="font-mono text-gray-500">{viewProduct.id}</span></p>
+                        <p className="text-xs text-gray-400">ID: <span className="font-mono text-gray-500 text-[10px]">{viewProduct.id}</span></p>
                       </div>
                       <button className="shrink-0 text-gray-300 hover:text-gray-600 transition-colors" onClick={() => setViewProduct(null)}>
                         <X className="w-5 h-5" />
                       </button>
                     </div>
-                    <div className="flex items-center gap-2 mt-3 flex-wrap">
+                    <div className="flex items-center gap-2 mt-2 sm:mt-3 flex-wrap">
                       <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">{viewProduct.category}</span>
                       <span className={`text-xs text-white px-2 py-0.5 rounded-full font-medium ${stockBg}`}>{stockLabel}</span>
                       {viewProduct.hasVariants && (
                         <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">{activeVariants.length} variants</span>
                       )}
                     </div>
-                    {/* Stock bar */}
-                    <div className="mt-3">
+                    <div className="mt-2 sm:mt-3">
                       <div className="flex justify-between text-xs text-gray-500 mb-1">
                         <span>Stock level</span>
                         <span className="font-semibold">{viewProduct.stock} units</span>
@@ -1272,24 +1514,24 @@ export function NewSalesView() {
                 </div>
 
                 {/* Scrollable body */}
-                <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+                <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5">
 
                   {/* Pricing tiers */}
                   <div>
                     <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2.5">Pricing Tiers</p>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
                       {[
-                        { label: "Retail",     sub: "Full price",    price: viewProduct.retailPrice,    colour: "from-blue-500 to-blue-700",     disc: null },
-                        { label: "Trader",     sub: "15% discount",  price: viewProduct.traderPrice,    colour: "from-sky-500 to-sky-700",       disc: "-15%" },
-                        { label: "Wholesale",  sub: "30% discount",  price: viewProduct.wholesalePrice, colour: "from-purple-500 to-purple-700", disc: "-30%" },
+                        { label: "Retail",    sub: "Full price",   price: viewProduct.retailPrice,    colour: "from-blue-500 to-blue-700",     disc: null },
+                        { label: "Trader",    sub: "15% discount", price: viewProduct.traderPrice,    colour: "from-sky-500 to-sky-700",       disc: "-15%" },
+                        { label: "Wholesale", sub: "30% discount", price: viewProduct.wholesalePrice, colour: "from-purple-500 to-purple-700", disc: "-30%" },
                       ].map(tier => (
-                        <div key={tier.label} className={`bg-gradient-to-br ${tier.colour} rounded-xl p-3.5 text-white`}>
+                        <div key={tier.label} className={`bg-gradient-to-br ${tier.colour} rounded-xl p-2.5 sm:p-3.5 text-white`}>
                           <div className="flex items-center justify-between mb-1">
-                            <p className="text-xs font-semibold text-white/80">{tier.label}</p>
-                            {tier.disc && <span className="text-[10px] bg-white/20 rounded-full px-1.5 py-0.5 font-bold">{tier.disc}</span>}
+                            <p className="text-[10px] sm:text-xs font-semibold text-white/80">{tier.label}</p>
+                            {tier.disc && <span className="text-[9px] sm:text-[10px] bg-white/20 rounded-full px-1 sm:px-1.5 py-0.5 font-bold">{tier.disc}</span>}
                           </div>
-                          <p className="text-xl font-bold">£{tier.price.toFixed(2)}</p>
-                          <p className="text-[10px] text-white/60 mt-0.5">{tier.sub}</p>
+                          <p className="text-base sm:text-xl font-bold">£{tier.price.toFixed(2)}</p>
+                          <p className="text-[9px] sm:text-[10px] text-white/60 mt-0.5 hidden sm:block">{tier.sub}</p>
                         </div>
                       ))}
                     </div>
@@ -1301,8 +1543,8 @@ export function NewSalesView() {
                       <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2.5">
                         Variants <span className="normal-case font-normal text-gray-300">({activeVariants.length} active)</span>
                       </p>
-                      <div className="border border-gray-100 rounded-xl overflow-hidden">
-                        <table className="w-full text-sm">
+                      <div className="border border-gray-100 rounded-xl overflow-hidden overflow-x-auto">
+                        <table className="w-full text-sm min-w-[320px]">
                           <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
                             <tr>
                               <th className="text-left px-3 py-2.5 font-semibold">Variant</th>
@@ -1335,7 +1577,7 @@ export function NewSalesView() {
                   {/* Quick stats */}
                   <div>
                     <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2.5">Summary</p>
-                    <div className="grid grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
                       {[
                         { label: "Category",      value: viewProduct.category },
                         { label: "Product ID",    value: viewProduct.id },
@@ -1347,7 +1589,7 @@ export function NewSalesView() {
                         <div key={row.label} className="flex items-center gap-2.5 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2.5">
                           <div className="min-w-0">
                             <p className="text-[10px] text-gray-400 uppercase tracking-wide">{row.label}</p>
-                            <p className="text-sm font-semibold text-gray-800 truncate">{row.value}</p>
+                            <p className="text-xs sm:text-sm font-semibold text-gray-800 truncate">{row.value}</p>
                           </div>
                         </div>
                       ))}
@@ -1356,17 +1598,17 @@ export function NewSalesView() {
                 </div>
 
                 {/* Footer */}
-                <div className="px-6 py-4 border-t bg-gray-50 flex items-center justify-between shrink-0">
-                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => { setViewProduct(null); setProductListOpen(true); }}>
-                    ← Back to List
+                <div className="px-4 sm:px-6 py-3 sm:py-4 border-t bg-gray-50 flex items-center justify-between shrink-0 gap-2">
+                  <Button variant="outline" size="sm" className="gap-1.5 text-xs sm:text-sm" onClick={() => { setViewProduct(null); setProductListOpen(true); }}>
+                    ← Back
                   </Button>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => { setViewProduct(null); navigate("/inventory"); }}>
+                  <div className="flex gap-1.5 sm:gap-2">
+                    <Button variant="outline" size="sm" className="text-xs sm:text-sm hidden sm:flex" onClick={() => { setViewProduct(null); navigate("/inventory"); }}>
                       Open in Inventory
                     </Button>
                     <Button
                       size="sm"
-                      className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
+                      className="bg-blue-600 hover:bg-blue-700 text-white gap-1 sm:gap-1.5 text-xs sm:text-sm"
                       disabled={viewProduct.stock === 0}
                       onClick={() => {
                         addProductToSale(viewProduct);
@@ -1374,7 +1616,7 @@ export function NewSalesView() {
                         toast.success(`${viewProduct.name} added to sale`);
                       }}
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       Add to Sale
                     </Button>
                   </div>
@@ -1387,28 +1629,28 @@ export function NewSalesView() {
 
       {/* Price Edit Dialog */}
       <Dialog open={priceEditDialog.open} onOpenChange={closePriceDialog}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="w-[95vw] sm:w-auto sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-blue-600" />
-              Edit Price - {priceEditDialog.item?.description}
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <PoundSterling className="w-5 h-5 text-blue-600 shrink-0" />
+              <span className="truncate">Edit Price - {priceEditDialog.item?.description}</span>
             </DialogTitle>
             <DialogDescription>
               View and update the price for this product. Below are the reference prices based on customer type.
             </DialogDescription>
           </DialogHeader>
-          
+
           {priceEditDialog.item && (
             <div className="space-y-4">
               {/* Product Info */}
-              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4 space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Product Code:</span>
-                  <span className="font-medium">{priceEditDialog.item.product.id}</span>
+                  <span className="font-medium text-sm truncate ml-2">{priceEditDialog.item.product.id}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">SKU:</span>
-                  <span className="font-medium">{priceEditDialog.item.product.sku}</span>
+                  <span className="font-medium text-sm">{priceEditDialog.item.product.sku}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Stock Available:</span>
@@ -1421,18 +1663,18 @@ export function NewSalesView() {
               {/* Price Tiers */}
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">Reference Prices:</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-                    <p className="text-xs text-blue-600 font-medium mb-1">Retail</p>
-                    <p className="text-lg font-bold text-blue-700">£{priceEditDialog.item.product.retailPrice.toFixed(2)}</p>
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 text-center">
+                    <p className="text-[10px] sm:text-xs text-blue-600 font-medium mb-1">Retail</p>
+                    <p className="text-base sm:text-lg font-bold text-blue-700">£{priceEditDialog.item.product.retailPrice.toFixed(2)}</p>
                   </div>
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-                    <p className="text-xs text-green-600 font-medium mb-1">Trader (-15%)</p>
-                    <p className="text-lg font-bold text-green-700">£{priceEditDialog.item.product.traderPrice.toFixed(2)}</p>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-3 text-center">
+                    <p className="text-[10px] sm:text-xs text-green-600 font-medium mb-1">Trader</p>
+                    <p className="text-base sm:text-lg font-bold text-green-700">£{priceEditDialog.item.product.traderPrice.toFixed(2)}</p>
                   </div>
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
-                    <p className="text-xs text-purple-600 font-medium mb-1">Wholesale (-30%)</p>
-                    <p className="text-lg font-bold text-purple-700">£{priceEditDialog.item.product.wholesalePrice.toFixed(2)}</p>
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 sm:p-3 text-center">
+                    <p className="text-[10px] sm:text-xs text-purple-600 font-medium mb-1">Wholesale</p>
+                    <p className="text-base sm:text-lg font-bold text-purple-700">£{priceEditDialog.item.product.wholesalePrice.toFixed(2)}</p>
                   </div>
                 </div>
               </div>
@@ -1463,15 +1705,15 @@ export function NewSalesView() {
               {/* Quick Price Buttons */}
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">Quick Select:</Label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="hover:bg-blue-50 hover:border-blue-600"
-                    onClick={() => setPriceEditDialog(prev => ({ 
-                      ...prev, 
-                      newPrice: priceEditDialog.item!.product.retailPrice.toString() 
+                    className="hover:bg-blue-50 hover:border-blue-600 text-xs sm:text-sm"
+                    onClick={() => setPriceEditDialog(prev => ({
+                      ...prev,
+                      newPrice: priceEditDialog.item!.product.retailPrice.toString()
                     }))}
                   >
                     Retail
@@ -1480,10 +1722,10 @@ export function NewSalesView() {
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="hover:bg-green-50 hover:border-green-600"
-                    onClick={() => setPriceEditDialog(prev => ({ 
-                      ...prev, 
-                      newPrice: priceEditDialog.item!.product.traderPrice.toString() 
+                    className="hover:bg-green-50 hover:border-green-600 text-xs sm:text-sm"
+                    onClick={() => setPriceEditDialog(prev => ({
+                      ...prev,
+                      newPrice: priceEditDialog.item!.product.traderPrice.toString()
                     }))}
                   >
                     Trader
@@ -1492,10 +1734,10 @@ export function NewSalesView() {
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="hover:bg-purple-50 hover:border-purple-600"
-                    onClick={() => setPriceEditDialog(prev => ({ 
-                      ...prev, 
-                      newPrice: priceEditDialog.item!.product.wholesalePrice.toString() 
+                    className="hover:bg-purple-50 hover:border-purple-600 text-xs sm:text-sm"
+                    onClick={() => setPriceEditDialog(prev => ({
+                      ...prev,
+                      newPrice: priceEditDialog.item!.product.wholesalePrice.toString()
                     }))}
                   >
                     Wholesale
@@ -1504,19 +1746,16 @@ export function NewSalesView() {
               </div>
             </div>
           )}
-          
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={closePriceDialog}
-            >
+
+          <DialogFooter className="gap-2 flex-col sm:flex-row">
+            <Button variant="outline" onClick={closePriceDialog} className="w-full sm:w-auto">
               Cancel
             </Button>
             <Button
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
               onClick={handleUpdatePrice}
             >
-              <DollarSign className="w-4 h-4 mr-2" />
+              <PoundSterling className="w-4 h-4 mr-2" />
               Update Price
             </Button>
           </DialogFooter>
@@ -1525,7 +1764,7 @@ export function NewSalesView() {
 
       {/* Custom Product Dialog */}
       <Dialog open={customProductDialog} onOpenChange={setCustomProductDialog}>
-        <DialogContent className="sm:max-w-[520px]">
+        <DialogContent className="w-[95vw] sm:w-auto sm:max-w-[520px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <PackagePlus className="w-5 h-5 text-indigo-600" />
@@ -1553,7 +1792,7 @@ export function NewSalesView() {
             </div>
 
             {/* Price + Quantity */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="cp-price">
                   Unit Price (£) <span className="text-red-500">*</span>
@@ -1586,7 +1825,7 @@ export function NewSalesView() {
             </div>
 
             {/* Tax + Discount */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="cp-tax">VAT / Tax Rate (%)</Label>
                 <Select
@@ -1653,12 +1892,12 @@ export function NewSalesView() {
             )}
           </div>
 
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setCustomProductDialog(false)}>
+          <DialogFooter className="gap-2 flex-col sm:flex-row">
+            <Button variant="outline" onClick={() => setCustomProductDialog(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
             <Button
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white w-full sm:w-auto"
               onClick={handleAddCustomProduct}
             >
               <PackagePlus className="w-4 h-4 mr-2" />
@@ -1670,9 +1909,9 @@ export function NewSalesView() {
 
       {/* ════ SEARCH CUSTOMER DIALOG ════ */}
       <Dialog open={customerSearchOpen} onOpenChange={(o) => { setCustomerSearchOpen(o); if (!o) setCustomerQuery(""); }}>
-        <DialogContent className="sm:max-w-[560px] max-h-[80vh] overflow-hidden flex flex-col p-0 gap-0">
+        <DialogContent className="w-[95vw] sm:w-auto sm:max-w-[560px] max-h-[80vh] overflow-hidden flex flex-col p-0 gap-0">
           {/* Header */}
-          <div className="px-6 pt-5 pb-4 border-b">
+          <div className="px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b">
             <div className="flex items-center gap-2 mb-1">
               <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
                 <UserSearch className="w-4 h-4 text-slate-600" />
@@ -1730,24 +1969,24 @@ export function NewSalesView() {
                 return (
                   <button
                     key={cust.id}
-                    className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 border-b last:border-b-0 transition-colors text-left group"
+                    className="w-full flex items-center gap-2 sm:gap-3 px-4 sm:px-5 py-3 sm:py-3.5 hover:bg-gray-50 border-b last:border-b-0 transition-colors text-left group"
                     onClick={() => { setViewCustomer(cust); setCustomerSearchOpen(false); }}
                   >
                     {/* Avatar */}
-                    <div className="shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-slate-600 font-bold select-none">
+                    <div className="shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-slate-600 font-bold select-none text-sm">
                       {cust.name.charAt(0).toUpperCase()}
                     </div>
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-gray-900 truncate">{cust.name}</span>
+                        <span className="font-semibold text-gray-900 truncate text-sm">{cust.name}</span>
                         <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-medium capitalize ${typeColour[cust.type] ?? "bg-gray-100 text-gray-600 border-gray-200"}`}>
                           {cust.type}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400 flex-wrap">
+                      <div className="flex items-center gap-2 sm:gap-3 mt-0.5 text-xs text-gray-400 flex-wrap">
                         {cust.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{cust.phone}</span>}
-                        {cust.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{cust.email}</span>}
+                        {cust.email && <span className="hidden sm:flex items-center gap-1"><Mail className="w-3 h-3" /><span className="truncate max-w-[120px]">{cust.email}</span></span>}
                       </div>
                     </div>
                     {/* Stats */}
@@ -1762,7 +2001,7 @@ export function NewSalesView() {
             })()}
           </div>
 
-          <div className="px-6 py-3 border-t flex justify-between items-center bg-gray-50">
+          <div className="px-4 sm:px-6 py-3 border-t flex justify-between items-center bg-gray-50">
             <p className="text-xs text-gray-400">{customers.length} customers total</p>
             <Button variant="outline" size="sm" onClick={() => { setCustomerSearchOpen(false); setCustomerQuery(""); }}>Close</Button>
           </div>
@@ -1771,7 +2010,7 @@ export function NewSalesView() {
 
       {/* ════ CUSTOMER DETAIL POPUP ════ */}
       <Dialog open={!!viewCustomer} onOpenChange={(o) => { if (!o) setViewCustomer(null); }}>
-        <DialogContent className="sm:max-w-[680px] max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0">
+        <DialogContent className="w-[95vw] sm:w-auto sm:max-w-[680px] max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0">
           <DialogTitle className="sr-only">
             {viewCustomer ? `Customer Profile – ${viewCustomer.name}` : "Customer Profile"}
           </DialogTitle>
@@ -1800,59 +2039,59 @@ export function NewSalesView() {
             return (
               <>
                 {/* ── Gradient hero ── */}
-                <div className={`bg-gradient-to-r ${typeGradient[viewCustomer.type] ?? "from-gray-600 to-gray-800"} px-6 pt-6 pb-5 text-white shrink-0`}>
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-2xl font-bold shadow-lg select-none">
+                <div className={`bg-gradient-to-r ${typeGradient[viewCustomer.type] ?? "from-gray-600 to-gray-800"} px-4 sm:px-6 pt-4 sm:pt-6 pb-4 sm:pb-5 text-white shrink-0`}>
+                  <div className="flex items-start justify-between mb-3 sm:mb-4">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg select-none">
                         {viewCustomer.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <h2 className="text-xl font-bold leading-none">{viewCustomer.name}</h2>
+                        <h2 className="text-base sm:text-xl font-bold leading-none">{viewCustomer.name}</h2>
                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                           <span className="text-xs px-2 py-0.5 rounded-full font-semibold capitalize bg-white/20">
                             {viewCustomer.type}
                           </span>
-                          <span className="text-xs text-white/70">
+                          <span className="text-[10px] sm:text-xs text-white/70 hidden sm:inline">
                             {viewCustomer.type === "wholesaler" ? "30% discount" : viewCustomer.type === "trader" ? "15% discount" : "Full price"}
                           </span>
-                          <span className="text-xs text-white/60">
+                          <span className="text-[10px] sm:text-xs text-white/60">
                             Since {viewCustomer.createdAt ? format(new Date(viewCustomer.createdAt), "MMM yyyy") : "—"}
                           </span>
                         </div>
                       </div>
                     </div>
-                    <button className="text-white/50 hover:text-white transition-colors" onClick={() => setViewCustomer(null)}>
+                    <button className="text-white/50 hover:text-white transition-colors shrink-0" onClick={() => setViewCustomer(null)}>
                       <X className="w-5 h-5" />
                     </button>
                   </div>
 
-                  {/* KPI strip */}
-                  <div className="grid grid-cols-4 gap-2">
+                  {/* KPI strip — 2x2 on mobile, 4-col on sm+ */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {[
-                      { label: "Total Spent",   value: `£${totalSpent.toFixed(0)}`,                      icon: <TrendingUp className="w-3.5 h-3.5" />, sub: `${custInvoices.length} invoices` },
-                      { label: "Outstanding",   value: `£${totalDue.toFixed(0)}`,                        icon: <TrendingDown className="w-3.5 h-3.5" />, sub: `${custInvoices.length - paidCount} unpaid` },
-                      { label: "Paid Invoices", value: paidCount,                                        icon: <Receipt className="w-3.5 h-3.5" />, sub: `of ${custInvoices.length} total` },
+                      { label: "Total Spent",   value: `£${totalSpent.toFixed(0)}`,                       icon: <TrendingUp className="w-3.5 h-3.5" />, sub: `${custInvoices.length} invoices` },
+                      { label: "Outstanding",   value: `£${totalDue.toFixed(0)}`,                         icon: <TrendingDown className="w-3.5 h-3.5" />, sub: `${custInvoices.length - paidCount} unpaid` },
+                      { label: "Paid Invoices", value: paidCount,                                         icon: <Receipt className="w-3.5 h-3.5" />, sub: `of ${custInvoices.length} total` },
                       { label: "Credit Bal.",   value: `£${(viewCustomer.creditBalance ?? 0).toFixed(0)}`, icon: <CreditCard className="w-3.5 h-3.5" />, sub: viewCustomer.creditLimit ? `Limit £${viewCustomer.creditLimit}` : "No limit set" },
                     ].map(k => (
-                      <div key={k.label} className="bg-white/10 hover:bg-white/20 transition-colors rounded-xl px-3 py-2.5">
+                      <div key={k.label} className="bg-white/10 hover:bg-white/20 transition-colors rounded-xl px-2.5 sm:px-3 py-2 sm:py-2.5">
                         <div className="flex items-center gap-1 text-white/60 mb-1">
                           {k.icon}
-                          <span className="text-[10px] uppercase tracking-wide">{k.label}</span>
+                          <span className="text-[9px] sm:text-[10px] uppercase tracking-wide">{k.label}</span>
                         </div>
-                        <p className="font-bold text-white">{k.value}</p>
-                        <p className="text-[10px] text-white/50 mt-0.5">{k.sub}</p>
+                        <p className="font-bold text-white text-sm sm:text-base">{k.value}</p>
+                        <p className="text-[9px] sm:text-[10px] text-white/50 mt-0.5">{k.sub}</p>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 {/* ── Scrollable body ── */}
-                <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+                <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-6">
 
                   {/* Contact info */}
                   <div>
                     <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2.5">Contact Information</p>
-                    <div className="grid grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
                       {[
                         { icon: <Phone className="w-3.5 h-3.5 text-slate-400" />, label: "Phone",        value: viewCustomer.phone   || "—" },
                         { icon: <Mail  className="w-3.5 h-3.5 text-slate-400" />, label: "Email",        value: viewCustomer.email   || "—" },
@@ -1874,7 +2113,7 @@ export function NewSalesView() {
                   {(viewCustomer.creditLimit ?? 0) > 0 && (
                     <div>
                       <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2.5">Credit Usage</p>
-                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                      <div className="bg-gray-50 rounded-xl p-3 sm:p-4 border border-gray-100">
                         <div className="flex justify-between text-sm mb-2">
                           <span className="text-gray-500">Used: <strong className="text-gray-800">£{(viewCustomer.creditBalance ?? 0).toFixed(2)}</strong></span>
                           <span className="text-gray-500">Limit: <strong className="text-gray-800">£{viewCustomer.creditLimit!.toFixed(2)}</strong></span>
@@ -1905,17 +2144,17 @@ export function NewSalesView() {
                     ) : (
                       <div className="space-y-1.5">
                         {custInvoices.slice(0, 7).map(inv => (
-                          <div key={inv.id} className="flex items-center gap-3 px-3.5 py-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors border border-gray-100">
+                          <div key={inv.id} className="flex items-center gap-2 sm:gap-3 px-3 sm:px-3.5 py-2 sm:py-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors border border-gray-100">
                             <FileText className="w-4 h-4 text-gray-300 shrink-0" />
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-sm text-gray-800">{inv.invoiceNumber}</p>
+                              <p className="font-semibold text-xs sm:text-sm text-gray-800">{inv.invoiceNumber}</p>
                               <p className="text-xs text-gray-400">{inv.issueDate ? format(new Date(inv.issueDate), "dd MMM yyyy") : "—"}</p>
                             </div>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium capitalize shrink-0 ${statusColour[inv.status] ?? "bg-gray-100 text-gray-500"}`}>
+                            <span className={`text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-medium capitalize shrink-0 ${statusColour[inv.status] ?? "bg-gray-100 text-gray-500"}`}>
                               {inv.status.replace("_", " ")}
                             </span>
                             <div className="text-right shrink-0">
-                              <p className="font-bold text-sm text-gray-800">£{(inv.total ?? 0).toFixed(2)}</p>
+                              <p className="font-bold text-xs sm:text-sm text-gray-800">£{(inv.total ?? 0).toFixed(2)}</p>
                               {(inv.amountDue ?? 0) > 0 && <p className="text-[10px] text-red-500">Due £{inv.amountDue!.toFixed(2)}</p>}
                             </div>
                           </div>
@@ -1933,17 +2172,17 @@ export function NewSalesView() {
                       <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2.5">Recent Credit Activity</p>
                       <div className="space-y-1.5">
                         {[...viewCustomer.creditTransactions].reverse().slice(0, 5).map(tx => (
-                          <div key={tx.id} className="flex items-center gap-3 px-3.5 py-2.5 bg-gray-50 rounded-xl border border-gray-100">
+                          <div key={tx.id} className="flex items-center gap-2 sm:gap-3 px-3 sm:px-3.5 py-2 sm:py-2.5 bg-gray-50 rounded-xl border border-gray-100">
                             <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${tx.type === "add" || tx.type === "refund" ? "bg-green-100" : "bg-red-50"}`}>
                               {tx.type === "add" || tx.type === "refund"
                                 ? <TrendingUp className="w-3.5 h-3.5 text-green-600" />
                                 : <TrendingDown className="w-3.5 h-3.5 text-red-500" />}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-800 truncate">{tx.description}</p>
+                              <p className="text-xs sm:text-sm font-medium text-gray-800 truncate">{tx.description}</p>
                               <p className="text-xs text-gray-400">{format(new Date(tx.createdAt), "dd MMM yyyy")}</p>
                             </div>
-                            <p className={`font-bold text-sm shrink-0 ${tx.type === "add" || tx.type === "refund" ? "text-green-600" : "text-red-500"}`}>
+                            <p className={`font-bold text-xs sm:text-sm shrink-0 ${tx.type === "add" || tx.type === "refund" ? "text-green-600" : "text-red-500"}`}>
                               {tx.type === "add" || tx.type === "refund" ? "+" : "−"}£{Math.abs(tx.amount).toFixed(2)}
                             </p>
                           </div>
@@ -1954,33 +2193,34 @@ export function NewSalesView() {
                 </div>
 
                 {/* ── Footer ── */}
-                <div className="px-6 py-4 border-t flex items-center justify-between bg-gray-50 shrink-0">
+                <div className="px-4 sm:px-6 py-3 sm:py-4 border-t flex items-center justify-between bg-gray-50 shrink-0 gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-1.5"
+                    className="gap-1.5 text-xs sm:text-sm"
                     onClick={() => { setViewCustomer(null); setCustomerSearchOpen(true); }}
                   >
-                    ← Back to Search
+                    ← Back
                   </Button>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1.5 sm:gap-2">
                     <Button
                       variant="outline"
                       size="sm"
+                      className="text-xs sm:text-sm hidden sm:flex"
                       onClick={() => { setViewCustomer(null); navigate("/customers"); }}
                     >
                       Open Full Profile
                     </Button>
                     <Button
                       size="sm"
-                      className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
+                      className="bg-blue-600 hover:bg-blue-700 text-white gap-1 sm:gap-1.5 text-xs sm:text-sm"
                       onClick={() => {
                         setSelectedCustomer(viewCustomer);
                         setViewCustomer(null);
                         toast.success(`${viewCustomer.name} selected for this sale`);
                       }}
                     >
-                      <BadgeCheck className="w-4 h-4" />
+                      <BadgeCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       Select for Sale
                     </Button>
                   </div>
@@ -1990,6 +2230,39 @@ export function NewSalesView() {
           })()}
         </DialogContent>
       </Dialog>
+
+
+      {/* ════ DELETE DRAFT CONFIRM DIALOG ════ */}
+<Dialog open={deleteDraftDialog.open} onOpenChange={(o) => !o && setDeleteDraftDialog({ open: false, id: null })}>
+  <DialogContent className="w-[90vw] sm:max-w-[380px]">
+    <DialogHeader>
+      <DialogTitle className="flex items-center gap-2 text-red-600">
+        <Trash className="w-5 h-5" />
+        Delete Draft
+      </DialogTitle>
+      <DialogDescription>
+        Are you sure you want to delete this draft? This action cannot be undone.
+      </DialogDescription>
+    </DialogHeader>
+    <DialogFooter className="gap-2 flex-col sm:flex-row pt-2">
+      <Button
+        variant="outline"
+        className="w-full sm:w-auto"
+        onClick={() => setDeleteDraftDialog({ open: false, id: null })}
+      >
+        Cancel
+      </Button>
+      <Button
+        variant="destructive"
+        className="w-full sm:w-auto"
+        onClick={confirmDeleteDraft}
+      >
+        <Trash className="w-4 h-4 mr-2" />
+        Delete
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
     </div>
   );
 }

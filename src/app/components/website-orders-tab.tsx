@@ -1,18 +1,12 @@
 /**
  * WebsiteOrdersTab
  * Full online-order management panel embedded inside the Website Management view.
- * Features:
- *   - Stats dashboard
- *   - Status-tab filtering + full-text search
- *   - Per-order expand with items, address, tracking summary
- *   - Tracking Management modal (carrier, number, URL, ETA, packing info)
- *   - Dispatch Label modal with browser print (CSS @media print isolation)
  */
 import { useState, useMemo } from "react";
 import {
-  ShoppingBag, Search, Truck, CheckCircle2, Clock, RefreshCw,
+  ShoppingBag, Search, Truck, CheckCircle2, RefreshCw,
   PackageCheck, X, ChevronDown, ChevronUp, Printer,
-  MapPin, User, Weight, Ruler, StickyNote, Tag,
+  MapPin, User, Weight, Ruler, StickyNote,
   TrendingUp, AlertCircle, Save, ExternalLink, Copy,
   CheckCheck, ArrowUpRight, Layers, Send, Globe,
   CreditCard, Banknote, Package, Mail, Phone,
@@ -46,7 +40,7 @@ interface OnlineOrderItem {
 
 interface OnlineOrder {
   id: string;
-  orderNumber: string;          // e.g. "WEB-0001"
+  orderNumber: string;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -56,13 +50,12 @@ interface OnlineOrder {
   tax: number;
   total: number;
   status: OnlineOrderStatus;
-  shippingAddress: string;      // formatted multiline
+  shippingAddress: string;
   paymentMethod: "card" | "paypal" | "bank_transfer" | "apple_pay";
   paymentStatus: "paid" | "pending" | "refunded";
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
-  // Tracking & dispatch
   trackingNumber?: string;
   trackingCarrier?: string;
   trackingUrl?: string;
@@ -90,10 +83,10 @@ const STATUS_CFG: Record<OnlineOrderStatus, {
 };
 
 const PAYMENT_ICONS: Record<string, { icon: React.ElementType; label: string; color: string }> = {
-  card:          { icon: CreditCard, label: "Card",          color: "text-blue-600"   },
-  paypal:        { icon: Globe,      label: "PayPal",        color: "text-sky-600"    },
-  bank_transfer: { icon: Banknote,   label: "Bank Transfer", color: "text-green-600"  },
-  apple_pay:     { icon: CreditCard, label: "Apple Pay",     color: "text-gray-700"   },
+  card:          { icon: CreditCard, label: "Card",          color: "text-blue-600"  },
+  paypal:        { icon: Globe,      label: "PayPal",        color: "text-sky-600"   },
+  bank_transfer: { icon: Banknote,   label: "Bank Transfer", color: "text-green-600" },
+  apple_pay:     { icon: CreditCard, label: "Apple Pay",     color: "text-gray-700"  },
 };
 
 const CARRIERS = [
@@ -111,9 +104,9 @@ const SEED: OnlineOrder[] = [
     id:"wo-1", orderNumber:"WEB-0001",
     customerName:"James Harrison", customerEmail:"james.harrison@email.co.uk", customerPhone:"+44 7700 900123",
     items:[
-      { id:"i1", productName:"iPhone 15 Screen Assembly",     sku:"SCR-IP15",   category:"Screens",    quantity:1, unitPrice:120.00, total:120.00 },
-      { id:"i2", productName:"Tempered Glass Screen Guard",    sku:"PRO-TG15",   category:"Protection", quantity:2, unitPrice:4.00,   total:8.00   },
-      { id:"i3", productName:"USB-C Fast Charging Cable 2m",  sku:"CBL-USBC2",  category:"Cables",     quantity:1, unitPrice:6.00,   total:6.00   },
+      { id:"i1", productName:"iPhone 15 Screen Assembly",    sku:"SCR-IP15",  category:"Screens",    quantity:1, unitPrice:120.00, total:120.00 },
+      { id:"i2", productName:"Tempered Glass Screen Guard",   sku:"PRO-TG15",  category:"Protection", quantity:2, unitPrice:4.00,   total:8.00   },
+      { id:"i3", productName:"USB-C Fast Charging Cable 2m", sku:"CBL-USBC2", category:"Cables",     quantity:1, unitPrice:6.00,   total:6.00   },
     ],
     subtotal:134.00, shippingFee:0, tax:26.80, total:160.80,
     status:"processing",
@@ -157,8 +150,8 @@ const SEED: OnlineOrder[] = [
     id:"wo-4", orderNumber:"WEB-0004",
     customerName:"Amelia Watson", customerEmail:"amelia.w@gmail.com", customerPhone:"+44 7700 444321",
     items:[
-      { id:"i7", productName:"Bluetooth Earbuds Pro",  sku:"EAR-BT-P", category:"Audio",    quantity:1, unitPrice:39.00, total:39.00 },
-      { id:"i8", productName:"Screen Cleaning Kit Pro",sku:"CLN-KIT-P",category:"Cleaning", quantity:1, unitPrice:5.00,  total:5.00  },
+      { id:"i7", productName:"Bluetooth Earbuds Pro",   sku:"EAR-BT-P",  category:"Audio",    quantity:1, unitPrice:39.00, total:39.00 },
+      { id:"i8", productName:"Screen Cleaning Kit Pro", sku:"CLN-KIT-P", category:"Cleaning", quantity:1, unitPrice:5.00,  total:5.00  },
     ],
     subtotal:44.00, shippingFee:0, tax:8.80, total:52.80,
     status:"confirmed",
@@ -171,14 +164,14 @@ const SEED: OnlineOrder[] = [
     id:"wo-5", orderNumber:"WEB-0005",
     customerName:"Liam Foster", customerEmail:"liam.foster@hotmail.co.uk", customerPhone:"+44 7500 333666",
     items:[
-      { id:"i9",  productName:"Car Phone Mount Universal",   sku:"MNT-CAR-U", category:"Mounts",  quantity:2, unitPrice:15.00, total:30.00 },
-      { id:"i10", productName:"Samsung S24 Battery",         sku:"BAT-SS24",  category:"Batteries",quantity:1, unitPrice:30.00, total:30.00 },
+      { id:"i9",  productName:"Car Phone Mount Universal", sku:"MNT-CAR-U", category:"Mounts",    quantity:2, unitPrice:15.00, total:30.00 },
+      { id:"i10", productName:"Samsung S24 Battery",       sku:"BAT-SS24",  category:"Batteries", quantity:1, unitPrice:30.00, total:30.00 },
     ],
     subtotal:60.00, shippingFee:5.99, tax:13.20, total:79.19,
     status:"delivered",
     shippingAddress:"3 Elmwood Grove\nEdinburgh\nEH6 7RQ\nUnited Kingdom",
     paymentMethod:"card", paymentStatus:"paid",
-    trackingNumber:"DPD5678901234",trackingCarrier:"DPD",
+    trackingNumber:"DPD5678901234", trackingCarrier:"DPD",
     estimatedDelivery:new Date("2026-02-18"),
     dispatchedAt:new Date("2026-02-16T09:00:00"),
     labelPrinted:true, weight:1.2, dimensions:"28×20×10 cm",
@@ -188,8 +181,8 @@ const SEED: OnlineOrder[] = [
     id:"wo-6", orderNumber:"WEB-0006",
     customerName:"Sophie Turner", customerEmail:"sophie.t@icloud.com", customerPhone:"+44 7600 555888",
     items:[
-      { id:"i11", productName:"iPhone 15 Pro Leather Case",  sku:"CAS-IP15P-L", category:"Cases",      quantity:1, unitPrice:28.00, total:28.00 },
-      { id:"i12", productName:"MagSafe Charger Compatible",  sku:"CHG-MAGS",    category:"Charging",   quantity:1, unitPrice:22.00, total:22.00 },
+      { id:"i11", productName:"iPhone 15 Pro Leather Case", sku:"CAS-IP15P-L", category:"Cases",    quantity:1, unitPrice:28.00, total:28.00 },
+      { id:"i12", productName:"MagSafe Charger Compatible",  sku:"CHG-MAGS",   category:"Charging", quantity:1, unitPrice:22.00, total:22.00 },
     ],
     subtotal:50.00, shippingFee:0, tax:10.00, total:60.00,
     status:"processing",
@@ -202,7 +195,7 @@ const SEED: OnlineOrder[] = [
     id:"wo-7", orderNumber:"WEB-0007",
     customerName:"Noah Williams", customerEmail:"noah.w@email.com", customerPhone:"+44 7400 222999",
     items:[
-      { id:"i13", productName:"Gaming Controller Phone Clip", sku:"ACC-GCP", category:"Gaming",   quantity:1, unitPrice:16.00, total:16.00 },
+      { id:"i13", productName:"Gaming Controller Phone Clip", sku:"ACC-GCP", category:"Gaming", quantity:1, unitPrice:16.00, total:16.00 },
     ],
     subtotal:16.00, shippingFee:5.99, tax:4.40, total:26.39,
     status:"cancelled",
@@ -215,13 +208,13 @@ const SEED: OnlineOrder[] = [
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export function WebsiteOrdersTab() {
-  const [orders, setOrders]                   = useState<OnlineOrder[]>(SEED);
-  const [search, setSearch]                   = useState("");
-  const [activeTab, setActiveTab]             = useState<OnlineOrderStatus | "all">("all");
-  const [expandedId, setExpandedId]           = useState<string | null>(null);
-  const [trackingOrder, setTrackingOrder]     = useState<OnlineOrder | null>(null);
-  const [labelOrder, setLabelOrder]           = useState<OnlineOrder | null>(null);
-  const [copiedTracking, setCopiedTracking]   = useState(false);
+  const [orders, setOrders]                 = useState<OnlineOrder[]>(SEED);
+  const [search, setSearch]                 = useState("");
+  const [activeTab, setActiveTab]           = useState<OnlineOrderStatus | "all">("all");
+  const [expandedId, setExpandedId]         = useState<string | null>(null);
+  const [trackingOrder, setTrackingOrder]   = useState<OnlineOrder | null>(null);
+  const [labelOrder, setLabelOrder]         = useState<OnlineOrder | null>(null);
+  const [copiedTracking, setCopiedTracking] = useState(false);
 
   const [trackingForm, setTrackingForm] = useState({
     trackingNumber:"", trackingCarrier:"", trackingUrl:"",
@@ -230,18 +223,14 @@ export function WebsiteOrdersTab() {
 
   // ── Derived ─────────────────────────────────────────────────────────────────
   const stats = useMemo(() => ({
-    total:      orders.length,
-    newOrders:  orders.filter(o => o.status === "new").length,
-    processing: orders.filter(o => o.status === "processing").length,
-    shipped:    orders.filter(o => o.status === "shipped").length,
-    delivered:  orders.filter(o => o.status === "delivered").length,
-    cancelled:  orders.filter(o => o.status === "cancelled" || o.status === "refunded").length,
-    revenue:    orders.filter(o => !["cancelled","refunded"].includes(o.status)).reduce((s,o)=>s+o.total,0),
-    readyToShip:orders.filter(o => o.status === "processing").length,
-    todayRevenue: orders.filter(o => {
-      const d = new Date(o.createdAt); const n = new Date();
-      return d.toDateString() === n.toDateString() && !["cancelled","refunded"].includes(o.status);
-    }).reduce((s,o)=>s+o.total,0),
+    total:       orders.length,
+    newOrders:   orders.filter(o => o.status === "new").length,
+    processing:  orders.filter(o => o.status === "processing").length,
+    shipped:     orders.filter(o => o.status === "shipped").length,
+    delivered:   orders.filter(o => o.status === "delivered").length,
+    cancelled:   orders.filter(o => o.status === "cancelled" || o.status === "refunded").length,
+    revenue:     orders.filter(o => !["cancelled","refunded"].includes(o.status)).reduce((s,o) => s+o.total, 0),
+    readyToShip: orders.filter(o => o.status === "processing").length,
   }), [orders]);
 
   const filtered = useMemo(() => {
@@ -321,6 +310,79 @@ export function WebsiteOrdersTab() {
     updateOrder(order.id, { labelPrinted: true });
   };
 
+  // ── FIXED: Proper print handler (same approach as CustomerOrdersView) ────────
+  const handlePrint = () => {
+    const labelEl = document.getElementById("web-dispatch-label-print");
+    if (!labelEl) {
+      toast.error("Label content not found");
+      return;
+    }
+
+    // Clone all current page stylesheets so Tailwind classes render in the print window
+    const styleSheets = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+      .map((node) => node.outerHTML)
+      .join("\n");
+
+    const printWindow = window.open("", "_blank", "width=650,height=900");
+    if (!printWindow) {
+      toast.error("Popup blocked — please allow popups for printing");
+      return;
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Dispatch Label – ${labelOrder?.orderNumber || ""}</title>
+          ${styleSheets}
+          <style>
+            html, body {
+              margin: 0;
+              padding: 12mm;
+              background: #fff;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              color-adjust: exact !important;
+            }
+            @media print {
+              html, body {
+                padding: 0;
+              }
+              @page {
+                margin: 8mm;
+                size: A5;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div style="max-width: 500px; margin: 0 auto;">
+            ${labelEl.innerHTML}
+          </div>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+
+    const triggerPrint = () => {
+      printWindow.focus();
+      printWindow.print();
+      setTimeout(() => {
+        try { printWindow.close(); } catch (_) { /* already closed */ }
+      }, 1000);
+    };
+
+    if (printWindow.document.readyState === "complete") {
+      setTimeout(triggerPrint, 500);
+    } else {
+      printWindow.onload = () => setTimeout(triggerPrint, 500);
+      setTimeout(triggerPrint, 2000);
+    }
+
+    toast.success("Print dialog opened");
+  };
+
   const copyTracking = (num: string) => {
     navigator.clipboard.writeText(num).then(() => {
       setCopiedTracking(true);
@@ -334,26 +396,16 @@ export function WebsiteOrdersTab() {
   return (
     <div className="space-y-5">
 
-      {/* Print isolation styles */}
-      <style>{`
-        @media print {
-          body > * { display: none !important; }
-          #web-dispatch-label { display: block !important; }
-          @page { margin: 8mm; size: A5; }
-        }
-        #web-dispatch-label { display: none; }
-      `}</style>
-
       {/* ── Stats Row ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
         {[
-          { label:"Total",      value:stats.total,              icon:Layers,       grad:"from-slate-500 to-gray-600",   tab:"all"        },
-          { label:"New",        value:stats.newOrders,          icon:ShoppingBag,  grad:"from-sky-500 to-cyan-500",     tab:"new"        },
-          { label:"Processing", value:stats.processing,         icon:RefreshCw,    grad:"from-indigo-500 to-blue-500",  tab:"processing" },
-          { label:"Shipped",    value:stats.shipped,            icon:Truck,        grad:"from-purple-500 to-violet-500",tab:"shipped"    },
-          { label:"Delivered",  value:stats.delivered,          icon:PackageCheck, grad:"from-emerald-500 to-teal-500", tab:"delivered"  },
-          { label:"Cancelled",  value:stats.cancelled,          icon:X,            grad:"from-red-500 to-rose-500",     tab:"cancelled"  },
-          { label:"Revenue",    value:`£${stats.revenue.toFixed(0)}`, icon:TrendingUp, grad:"from-blue-600 to-cyan-500", tab:"all" },
+          { label:"Total",      value:stats.total,                    icon:Layers,       grad:"from-slate-500 to-gray-600",    tab:"all"        },
+          { label:"New",        value:stats.newOrders,                icon:ShoppingBag,  grad:"from-sky-500 to-cyan-500",      tab:"new"        },
+          { label:"Processing", value:stats.processing,               icon:RefreshCw,    grad:"from-indigo-500 to-blue-500",   tab:"processing" },
+          { label:"Shipped",    value:stats.shipped,                  icon:Truck,        grad:"from-purple-500 to-violet-500", tab:"shipped"    },
+          { label:"Delivered",  value:stats.delivered,                icon:PackageCheck, grad:"from-emerald-500 to-teal-500",  tab:"delivered"  },
+          { label:"Cancelled",  value:stats.cancelled,                icon:X,            grad:"from-red-500 to-rose-500",      tab:"cancelled"  },
+          { label:"Revenue",    value:`£${stats.revenue.toFixed(0)}`, icon:TrendingUp,   grad:"from-blue-600 to-cyan-500",     tab:"all"        },
         ].map(s => (
           <button key={s.label} onClick={() => setActiveTab(s.tab as any)}
             className={cn(
@@ -375,11 +427,11 @@ export function WebsiteOrdersTab() {
           <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center shrink-0">
             <Send className="w-4 h-4 text-white"/>
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <p className="text-indigo-800 font-semibold text-sm">
               {stats.readyToShip} online order{stats.readyToShip > 1 ? "s" : ""} ready to dispatch
             </p>
-            <p className="text-indigo-600 text-xs">Add tracking info and print dispatch labels to ship them</p>
+            <p className="text-indigo-600 text-xs hidden sm:block">Add tracking info and print dispatch labels to ship them</p>
           </div>
           <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 gap-1.5 shrink-0"
             onClick={() => setActiveTab("processing")}>
@@ -390,8 +442,7 @@ export function WebsiteOrdersTab() {
 
       {/* ── Tab bar + Search ── */}
       <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
-        {/* Tabs */}
-        <div className="flex items-center gap-0.5 px-3 pt-3 border-b overflow-x-auto">
+        <div className="flex items-center gap-0.5 px-3 pt-3 border-b overflow-x-auto scrollbar-none">
           {(["all", ...ALL_STATUSES] as const).map(tab => {
             const cfg = tab === "all" ? null : STATUS_CFG[tab];
             const cnt = tabCounts[tab] || 0;
@@ -416,7 +467,6 @@ export function WebsiteOrdersTab() {
           })}
         </div>
 
-        {/* Search */}
         <div className="flex items-center gap-3 px-3 py-2.5">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>
@@ -445,12 +495,12 @@ export function WebsiteOrdersTab() {
       ) : (
         <div className="space-y-2">
           {filtered.map(order => {
-            const scfg   = STATUS_CFG[order.status];
-            const Icon   = scfg.icon;
-            const exp    = expandedId === order.id;
-            const next   = scfg.next;
+            const scfg    = STATUS_CFG[order.status];
+            const Icon    = scfg.icon;
+            const exp     = expandedId === order.id;
+            const next    = scfg.next;
             const nextCfg = next ? STATUS_CFG[next] : null;
-            const pmInfo = PAYMENT_ICONS[order.paymentMethod] ?? PAYMENT_ICONS["card"];
+            const pmInfo  = PAYMENT_ICONS[order.paymentMethod] ?? PAYMENT_ICONS["card"];
 
             return (
               <div key={order.id}
@@ -460,10 +510,10 @@ export function WebsiteOrdersTab() {
                 )}>
 
                 {/* ── Row ── */}
-                <div className="flex items-center gap-3 p-4 flex-wrap">
+                <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 flex-wrap">
 
                   {/* Status icon + order # */}
-                  <div className="flex items-center gap-2 min-w-[150px]">
+                  <div className="flex items-center gap-2 min-w-[130px]">
                     <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0", scfg.bg, scfg.border, "border")}>
                       <Icon className={cn("w-4 h-4", scfg.color)}/>
                     </div>
@@ -478,17 +528,15 @@ export function WebsiteOrdersTab() {
                   </div>
 
                   {/* Customer */}
-                  <div className="flex-1 min-w-[160px]">
+                  <div className="flex-1 min-w-[130px]">
                     <p className="font-medium text-gray-900 text-sm">{order.customerName}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] text-gray-400 truncate max-w-[160px]">{order.customerEmail}</span>
-                    </div>
+                    <span className="text-[10px] text-gray-400 truncate max-w-[140px] hidden sm:block">{order.customerEmail}</span>
                   </div>
 
                   {/* Items */}
                   <div className="hidden sm:block min-w-[80px]">
                     <p className="text-sm font-medium text-gray-700">{order.items.length} item{order.items.length > 1?"s":""}</p>
-                    <p className="text-[10px] text-gray-400">{order.items.reduce((s,i)=>s+i.quantity,0)} units</p>
+                    <p className="text-[10px] text-gray-400">{order.items.reduce((s,i) => s+i.quantity, 0)} units</p>
                   </div>
 
                   {/* Payment */}
@@ -520,35 +568,34 @@ export function WebsiteOrdersTab() {
                   </div>
 
                   {/* Total + date */}
-                  <div className="min-w-[80px] text-right">
+                  <div className="min-w-[70px] text-right">
                     <p className="font-bold text-gray-900">£{order.total.toFixed(2)}</p>
                     <p className="text-[10px] text-gray-400">{format(new Date(order.createdAt),"MMM d, HH:mm")}</p>
                   </div>
 
                   {/* Actions */}
                   <div className="flex items-center gap-1 shrink-0">
-                    {/* Advance */}
                     {next && (
                       <Button size="sm" onClick={() => advanceStatus(order)}
                         className={cn(
-                          "h-8 text-xs gap-1 px-2.5",
+                          "h-8 text-xs gap-1 px-2 sm:px-2.5",
                           next === "shipped"    ? "bg-purple-600 hover:bg-purple-700" :
                           next === "confirmed"  ? "bg-blue-600 hover:bg-blue-700"     :
                           next === "processing" ? "bg-indigo-600 hover:bg-indigo-700" :
                           "bg-emerald-600 hover:bg-emerald-700"
                         )}>
                         {next === "shipped" ? <Truck className="w-3 h-3"/> : <ArrowUpRight className="w-3 h-3"/>}
-                        {next === "shipped" ? "Dispatch" : `→ ${nextCfg?.label}`}
+                        <span className="hidden sm:inline">
+                          {next === "shipped" ? "Dispatch" : `→ ${nextCfg?.label}`}
+                        </span>
                       </Button>
                     )}
 
-                    {/* Tracking */}
                     <button onClick={() => openTrackingModal(order)} title="Manage tracking"
                       className="p-1.5 rounded-lg text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition-colors">
                       <Truck className="w-4 h-4"/>
                     </button>
 
-                    {/* Label */}
                     <button onClick={() => openLabelModal(order)} title="Print dispatch label"
                       className={cn("p-1.5 rounded-lg transition-colors",
                         order.labelPrinted
@@ -558,7 +605,6 @@ export function WebsiteOrdersTab() {
                       <Printer className="w-4 h-4"/>
                     </button>
 
-                    {/* Expand */}
                     <button onClick={() => setExpandedId(exp ? null : order.id)}
                       className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100">
                       {exp ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>}
@@ -568,7 +614,7 @@ export function WebsiteOrdersTab() {
 
                 {/* ── Expanded detail ── */}
                 {exp && (
-                  <div className="border-t bg-gray-50/80 p-5 space-y-4">
+                  <div className="border-t bg-gray-50/80 p-4 sm:p-5 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
                       {/* Items + totals */}
@@ -589,7 +635,6 @@ export function WebsiteOrdersTab() {
                             </div>
                           </div>
                         ))}
-                        {/* Totals */}
                         <div className="bg-white rounded-xl border p-3 space-y-1.5 text-sm">
                           <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>£{order.subtotal.toFixed(2)}</span></div>
                           {order.shippingFee > 0
@@ -688,7 +733,7 @@ export function WebsiteOrdersTab() {
                             <p className="text-xs font-semibold text-amber-700 mb-1 flex items-center gap-1">
                               <StickyNote className="w-3 h-3"/>Notes
                             </p>
-                            {order.notes       && <p className="text-xs text-amber-800">{order.notes}</p>}
+                            {order.notes        && <p className="text-xs text-amber-800">{order.notes}</p>}
                             {order.dispatchNotes && (
                               <p className="text-xs text-amber-800 mt-1 border-t border-amber-200 pt-1">{order.dispatchNotes}</p>
                             )}
@@ -699,7 +744,7 @@ export function WebsiteOrdersTab() {
 
                     {/* Packing info */}
                     {(order.packedBy || order.weight || order.dimensions) && (
-                      <div className="flex items-center gap-6 bg-white rounded-xl border p-3 text-sm flex-wrap">
+                      <div className="flex items-center gap-4 sm:gap-6 bg-white rounded-xl border p-3 text-sm flex-wrap">
                         {order.packedBy   && <span className="flex items-center gap-1.5 text-gray-600"><User className="w-3.5 h-3.5 text-gray-400"/>Packed by <strong>{order.packedBy}</strong></span>}
                         {order.weight     && <span className="flex items-center gap-1.5 text-gray-600"><Weight className="w-3.5 h-3.5 text-gray-400"/><strong>{order.weight} kg</strong></span>}
                         {order.dimensions && <span className="flex items-center gap-1.5 text-gray-600"><Ruler className="w-3.5 h-3.5 text-gray-400"/><strong>{order.dimensions}</strong></span>}
@@ -734,9 +779,8 @@ export function WebsiteOrdersTab() {
           TRACKING MODAL
       ═══════════════════════════════════════════════════════════════════════ */}
       {trackingOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
-            {/* Header */}
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg overflow-hidden">
             <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
               <div>
                 <h2 className="text-white font-bold flex items-center gap-2">
@@ -751,14 +795,14 @@ export function WebsiteOrdersTab() {
               </button>
             </div>
 
-            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="p-6 space-y-4 max-h-[65vh] overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium">Carrier *</Label>
                   <Select value={trackingForm.trackingCarrier}
                     onValueChange={v => setTrackingForm(f => ({...f, trackingCarrier: v}))}>
                     <SelectTrigger className="h-9"><SelectValue placeholder="Select carrier"/></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white">
                       {CARRIERS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                     </SelectContent>
                   </Select>
@@ -780,7 +824,7 @@ export function WebsiteOrdersTab() {
                   className="h-9"/>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium">Estimated Delivery</Label>
                   <Input type="date" value={trackingForm.estimatedDelivery}
@@ -795,7 +839,7 @@ export function WebsiteOrdersTab() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium">Weight (kg)</Label>
                   <Input type="number" step="0.1" placeholder="e.g. 1.5" value={trackingForm.weight}
@@ -840,8 +884,8 @@ export function WebsiteOrdersTab() {
           DISPATCH LABEL MODAL
       ═══════════════════════════════════════════════════════════════════════ */}
       {labelOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg">
             <div className="flex items-center justify-between px-6 py-4 border-b">
               <h2 className="font-bold text-gray-900 flex items-center gap-2">
                 <Printer className="w-5 h-5 text-blue-600"/>
@@ -852,16 +896,17 @@ export function WebsiteOrdersTab() {
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto max-h-[65vh]">
-              {/* Screen preview */}
-              <div id="web-dispatch-label">
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[60vh]">
+              {/* ── FIXED: id changed to web-dispatch-label-print ── */}
+              <div id="web-dispatch-label-print">
                 <WebDispatchLabel order={labelOrder}/>
               </div>
             </div>
 
             <div className="border-t px-6 py-4 flex items-center gap-3 bg-gray-50">
               <Button variant="outline" onClick={() => setLabelOrder(null)} className="flex-1">Close</Button>
-              <Button onClick={() => window.print()} className="flex-1 bg-blue-600 hover:bg-blue-700 gap-2">
+              {/* ── FIXED: now calls handlePrint instead of window.print() ── */}
+              <Button onClick={handlePrint} className="flex-1 bg-blue-600 hover:bg-blue-700 gap-2">
                 <Printer className="w-4 h-4"/>Print Label
               </Button>
             </div>
@@ -872,11 +917,10 @@ export function WebsiteOrdersTab() {
   );
 }
 
-// ─── Dispatch Label ────────────────────────────────────────────────────────────
+// ─── Dispatch Label Component ──────────────────────────────────────────────────
 function WebDispatchLabel({ order }: { order: OnlineOrder }) {
   const totalUnits = order.items.reduce((s,i) => s + i.quantity, 0);
 
-  // Simple visual barcode from order number
   const barcodeStr = order.orderNumber.replace(/[^A-Z0-9]/g, "");
   const barPattern = Array.from(barcodeStr).flatMap(c => {
     const v = c.charCodeAt(0) % 7;
@@ -923,10 +967,10 @@ function WebDispatchLabel({ order }: { order: OnlineOrder }) {
       {/* Order info grid */}
       <div className="grid grid-cols-4 divide-x border-b bg-gray-50">
         {[
-          { l:"Order Date",  v: format(new Date(order.createdAt),"dd/MM/yy")                    },
-          { l:"Items",       v: `${order.items.length} SKU / ${totalUnits} units`                },
-          { l:"Order Total", v: `£${order.total.toFixed(2)}`                                     },
-          { l:"Payment",     v: PAYMENT_ICONS[order.paymentMethod]?.label ?? order.paymentMethod },
+          { l:"Order Date",  v: format(new Date(order.createdAt),"dd/MM/yy")                     },
+          { l:"Items",       v: `${order.items.length} SKU / ${totalUnits} units`                 },
+          { l:"Order Total", v: `£${order.total.toFixed(2)}`                                      },
+          { l:"Payment",     v: PAYMENT_ICONS[order.paymentMethod]?.label ?? order.paymentMethod  },
         ].map(({l,v}) => (
           <div key={l} className="px-2.5 py-2 text-center">
             <p className="text-[8px] text-gray-400 uppercase tracking-wide">{l}</p>

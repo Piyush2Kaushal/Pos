@@ -15,6 +15,7 @@ import {
   Building2,
   Truck,
   AlertCircle,
+  AlertTriangle,
   CheckCircle2,
   ArrowRightLeft,
   FileText,
@@ -172,6 +173,11 @@ export function WarehouseManagementView() {
   const [selectedWarehouse, setSelectedWarehouse] = useState<WarehouseLocation | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: string; name: string }>({
+    open: false,
+    id: "",
+    name: "",
+  });
 
   const [warehouseForm, setWarehouseForm] = useState({
     name: "",
@@ -239,9 +245,8 @@ export function WarehouseManagementView() {
     toast.success("Warehouse updated successfully");
   };
 
-  const handleDeleteWarehouse = (id: string) => {
-    setWarehouses(warehouses.filter((wh) => wh.id !== id));
-    toast.success("Warehouse deleted successfully");
+  const handleDeleteWarehouse = (id: string, name: string) => {
+    setDeleteDialog({ open: true, id, name });
   };
 
   const handleCreateTransfer = () => {
@@ -351,110 +356,116 @@ export function WarehouseManagementView() {
   const activeWarehouses = warehouses.filter((wh) => wh.status === "active").length;
 
   return (
-    <div className="p-6">
+    <div className="p-3 sm:p-4 md:p-6">
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
+        {/* ── Header ── */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Warehouse className="w-7 h-7 text-blue-600" />
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Warehouse className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600 shrink-0" />
               Warehouse Management
             </h2>
             <p className="text-sm text-gray-600 mt-1">Manage multiple warehouse locations and stock transfers</p>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={() => setIsTransferDialogOpen(true)} variant="outline" className="gap-2">
-              <ArrowRightLeft className="w-4 h-4" />
-              New Transfer
+          <div className="flex gap-2 shrink-0">
+            <Button onClick={() => setIsTransferDialogOpen(true)} variant="outline" className="gap-1.5 text-xs sm:text-sm px-2.5 sm:px-4">
+              <ArrowRightLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline sm:inline">New Transfer</span>
+              <span className="xs:hidden sm:hidden">Transfer</span>
             </Button>
-            <Button onClick={() => { setSelectedWarehouse(null); resetWarehouseForm(); setIsWarehouseDialogOpen(true); }} className="gap-2">
-              <Plus className="w-4 h-4" />
-              Add Warehouse
+            <Button
+              onClick={() => { setSelectedWarehouse(null); resetWarehouseForm(); setIsWarehouseDialogOpen(true); }}
+              className="gap-1.5 text-xs sm:text-sm px-2.5 sm:px-4"
+            >
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline sm:inline">Add Warehouse</span>
+              <span className="xs:hidden sm:hidden">Add</span>
             </Button>
           </div>
         </div>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        {/* ── Key Metrics ── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
           <Card className="border-l-4 border-l-blue-500">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                <Building2 className="w-4 h-4" />
-                Total Warehouses
+            <CardHeader className="pb-2 pt-3 px-3 sm:px-4 sm:pt-4">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600 flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                <span className="truncate">Total Warehouses</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-blue-600">{warehouses.length}</div>
+            <CardContent className="px-3 pb-3 sm:px-4 sm:pb-4">
+              <div className="text-2xl sm:text-3xl font-bold text-blue-600">{warehouses.length}</div>
               <p className="text-xs text-gray-500 mt-1">{activeWarehouses} active locations</p>
             </CardContent>
           </Card>
           <Card className="border-l-4 border-l-green-500">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                <Boxes className="w-4 h-4" />
-                Total Capacity
+            <CardHeader className="pb-2 pt-3 px-3 sm:px-4 sm:pt-4">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600 flex items-center gap-1.5">
+                <Boxes className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                <span className="truncate">Total Capacity</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-green-600">{totalCapacity.toLocaleString()}</div>
+            <CardContent className="px-3 pb-3 sm:px-4 sm:pb-4">
+              <div className="text-2xl sm:text-3xl font-bold text-green-600">{totalCapacity.toLocaleString()}</div>
               <p className="text-xs text-gray-500 mt-1">Units across all locations</p>
             </CardContent>
           </Card>
           <Card className="border-l-4 border-l-purple-500">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                <Package className="w-4 h-4" />
-                Current Stock
+            <CardHeader className="pb-2 pt-3 px-3 sm:px-4 sm:pt-4">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600 flex items-center gap-1.5">
+                <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                <span className="truncate">Current Stock</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-purple-600">{totalStock.toLocaleString()}</div>
+            <CardContent className="px-3 pb-3 sm:px-4 sm:pb-4">
+              <div className="text-2xl sm:text-3xl font-bold text-purple-600">{totalStock.toLocaleString()}</div>
               <p className="text-xs text-gray-500 mt-1">Total inventory units</p>
             </CardContent>
           </Card>
           <Card className="border-l-4 border-l-orange-500">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
-                Utilization Rate
+            <CardHeader className="pb-2 pt-3 px-3 sm:px-4 sm:pt-4">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600 flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                <span className="truncate">Utilization Rate</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-orange-600">{utilizationRate.toFixed(1)}%</div>
+            <CardContent className="px-3 pb-3 sm:px-4 sm:pb-4">
+              <div className="text-2xl sm:text-3xl font-bold text-orange-600">{utilizationRate.toFixed(1)}%</div>
               <p className="text-xs text-gray-500 mt-1">Average capacity usage</p>
             </CardContent>
           </Card>
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* ── Tabs ── */}
       <Tabs defaultValue="warehouses" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="warehouses">Warehouse Locations</TabsTrigger>
-          <TabsTrigger value="transfers">Stock Transfers</TabsTrigger>
-          <TabsTrigger value="inventory">Inventory Distribution</TabsTrigger>
+        <TabsList className="w-full sm:w-auto overflow-x-auto">
+          <TabsTrigger value="warehouses" className="text-xs sm:text-sm whitespace-nowrap">Warehouse Locations</TabsTrigger>
+          <TabsTrigger value="transfers" className="text-xs sm:text-sm whitespace-nowrap">Stock Transfers</TabsTrigger>
+          <TabsTrigger value="inventory" className="text-xs sm:text-sm whitespace-nowrap">Inventory Distribution</TabsTrigger>
         </TabsList>
 
-        {/* Warehouses Tab */}
+        {/* ── Warehouses Tab ── */}
         <TabsContent value="warehouses" className="space-y-4">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Warehouse Locations</CardTitle>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <CardTitle className="text-base sm:text-lg">Warehouse Locations</CardTitle>
                 <div className="flex gap-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <div className="relative flex-1 sm:flex-none">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 z-10 pointer-events-none" />
                     <Input
                       placeholder="Search warehouses..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 w-64"
+                      className="pl-10 w-full sm:w-64 bg-white"
                     />
                   </div>
                   <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-32">
+                    <SelectTrigger className="w-28 sm:w-32">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white">
                       <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="inactive">Inactive</SelectItem>
@@ -464,202 +475,349 @@ export function WarehouseManagementView() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Warehouse</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Manager</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead className="text-right">Capacity</TableHead>
-                    <TableHead className="text-right">Current Stock</TableHead>
-                    <TableHead className="text-right">Utilization</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredWarehouses.map((warehouse) => {
-                    const utilization = (warehouse.currentStock / warehouse.capacity) * 100;
-                    return (
-                      <TableRow key={warehouse.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{warehouse.name}</p>
-                            <p className="text-xs text-gray-500">{warehouse.code}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-gray-400" />
-                            <div>
-                              <p className="text-sm">{warehouse.city}</p>
-                              <p className="text-xs text-gray-500">{warehouse.country}</p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{warehouse.manager}</TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <p>{warehouse.phone}</p>
-                            <p className="text-xs text-gray-500">{warehouse.email}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right font-semibold">{warehouse.capacity.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">{warehouse.currentStock.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full ${
-                                  utilization > 80 ? "bg-red-500" : utilization > 60 ? "bg-orange-500" : "bg-green-500"
-                                }`}
-                                style={{ width: `${utilization}%` }}
-                              />
-                            </div>
-                            <span className="text-sm font-medium">{utilization.toFixed(0)}%</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
+            <CardContent className="p-0 sm:p-6 sm:pt-0">
+              {/* ── Mobile Card View (< md) ── */}
+              <div className="block md:hidden divide-y divide-gray-100">
+                {filteredWarehouses.map((warehouse) => {
+                  const utilization = (warehouse.currentStock / warehouse.capacity) * 100;
+                  return (
+                    <div key={warehouse.id} className="p-4 space-y-3">
+                      {/* Row 1: name + status + actions */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm text-gray-900 truncate">{warehouse.name}</p>
+                          <p className="text-xs text-gray-500">{warehouse.code}</p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <Badge
                             variant={warehouse.status === "active" ? "default" : "secondary"}
-                            className={
+                            className={`text-xs ${
                               warehouse.status === "active"
                                 ? "bg-green-500"
                                 : warehouse.status === "maintenance"
                                 ? "bg-orange-500"
                                 : "bg-gray-500"
-                            }
+                            }`}
                           >
                             {warehouse.status}
                           </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => openEditDialog(warehouse)}
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEditDialog(warehouse)}>
+                            <Edit className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
+                            onClick={() => handleDeleteWarehouse(warehouse.id, warehouse.name)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Row 2: location + manager */}
+                      <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                          <span>{warehouse.city}, {warehouse.country}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Users className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                          <span className="truncate">{warehouse.manager}</span>
+                        </div>
+                      </div>
+
+                      {/* Row 3: capacity + stock */}
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-gray-500">Capacity: </span>
+                          <span className="font-semibold">{warehouse.capacity.toLocaleString()}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Stock: </span>
+                          <span className="font-semibold">{warehouse.currentStock.toLocaleString()}</span>
+                        </div>
+                      </div>
+
+                      {/* Row 4: utilization bar */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-gray-500">
+                          <span>Utilization</span>
+                          <span className="font-medium">{utilization.toFixed(0)}%</span>
+                        </div>
+                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${
+                              utilization > 80 ? "bg-red-500" : utilization > 60 ? "bg-orange-500" : "bg-green-500"
+                            }`}
+                            style={{ width: `${utilization}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* ── Desktop Table View (≥ md) ── */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Warehouse</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Manager</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead className="text-right">Capacity</TableHead>
+                      <TableHead className="text-right">Current Stock</TableHead>
+                      <TableHead className="text-center">Utilization</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredWarehouses.map((warehouse) => {
+                      const utilization = (warehouse.currentStock / warehouse.capacity) * 100;
+                      return (
+                        <TableRow key={warehouse.id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{warehouse.name}</p>
+                              <p className="text-xs text-gray-500">{warehouse.code}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <MapPin className="w-4 h-4 text-gray-400" />
+                              <div>
+                                <p className="text-sm">{warehouse.city}</p>
+                                <p className="text-xs text-gray-500">{warehouse.country}</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>{warehouse.manager}</TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              <p>{warehouse.phone}</p>
+                              <p className="text-xs text-gray-500">{warehouse.email}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right font-semibold">{warehouse.capacity.toLocaleString()}</TableCell>
+                          <TableCell className="text-right">{warehouse.currentStock.toLocaleString()}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full ${
+                                    utilization > 80 ? "bg-red-500" : utilization > 60 ? "bg-orange-500" : "bg-green-500"
+                                  }`}
+                                  style={{ width: `${utilization}%` }}
+                                />
+                              </div>
+                              <span className="text-sm font-medium">{utilization.toFixed(0)}%</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={warehouse.status === "active" ? "default" : "secondary"}
+                              className={
+                                warehouse.status === "active"
+                                  ? "bg-green-500"
+                                  : warehouse.status === "maintenance"
+                                  ? "bg-orange-500"
+                                  : "bg-gray-500"
+                              }
                             >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleDeleteWarehouse(warehouse.id)}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                              {warehouse.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button size="sm" variant="ghost" onClick={() => openEditDialog(warehouse)}>
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDeleteWarehouse(warehouse.id, warehouse.name)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Stock Transfers Tab */}
+        {/* ── Stock Transfers Tab ── */}
         <TabsContent value="transfers" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Stock Transfer History</CardTitle>
+              <CardTitle className="text-base sm:text-lg">Stock Transfer History</CardTitle>
               <CardDescription>Track stock movements between warehouses</CardDescription>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Transfer ID</TableHead>
-                    <TableHead>Product</TableHead>
-                    <TableHead>From</TableHead>
-                    <TableHead>To</TableHead>
-                    <TableHead className="text-right">Quantity</TableHead>
-                    <TableHead>Request Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {stockTransfers.map((transfer) => (
-                    <TableRow key={transfer.id}>
-                      <TableCell className="font-medium">{transfer.id.toUpperCase()}</TableCell>
-                      <TableCell>{transfer.productName}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Warehouse className="w-4 h-4 text-gray-400" />
-                          {transfer.fromWarehouse}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Warehouse className="w-4 h-4 text-gray-400" />
-                          {transfer.toWarehouse}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">{transfer.quantity}</TableCell>
-                      <TableCell>{format(transfer.requestDate, "MMM d, yyyy")}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="secondary"
-                          className={
-                            transfer.status === "completed"
-                              ? "bg-green-500 text-white"
-                              : transfer.status === "in-transit"
-                              ? "bg-blue-500 text-white"
-                              : transfer.status === "pending"
-                              ? "bg-orange-500 text-white"
-                              : "bg-gray-500 text-white"
-                          }
-                        >
-                          {transfer.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {transfer.status !== "completed" && transfer.status !== "cancelled" && (
-                          <Select
-                            value={transfer.status}
-                            onValueChange={(value) => handleUpdateTransferStatus(transfer.id, value as StockTransfer["status"])}
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="in-transit">In Transit</SelectItem>
-                              <SelectItem value="completed">Completed</SelectItem>
-                              <SelectItem value="cancelled">Cancelled</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
-                      </TableCell>
+            <CardContent className="p-0 sm:p-6 sm:pt-0">
+              {/* ── Mobile Card View (< md) ── */}
+              <div className="block md:hidden divide-y divide-gray-100">
+                {stockTransfers.map((transfer) => (
+                  <div key={transfer.id} className="p-4 space-y-2.5">
+                    {/* Row 1: ID + status */}
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-sm">{transfer.id.toUpperCase()}</span>
+                      <Badge
+                        variant="secondary"
+                        className={`text-xs ${
+                          transfer.status === "completed"
+                            ? "bg-green-500 text-white"
+                            : transfer.status === "in-transit"
+                            ? "bg-blue-500 text-white"
+                            : transfer.status === "pending"
+                            ? "bg-orange-500 text-white"
+                            : "bg-gray-500 text-white"
+                        }`}
+                      >
+                        {transfer.status}
+                      </Badge>
+                    </div>
+
+                    {/* Row 2: product */}
+                    <p className="text-sm text-gray-800 font-medium">{transfer.productName}</p>
+
+                    {/* Row 3: from → to */}
+                    <div className="flex items-center gap-1.5 text-xs text-gray-600 flex-wrap">
+                      <Warehouse className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <span className="truncate max-w-[120px]">{transfer.fromWarehouse}</span>
+                      <ArrowRightLeft className="w-3 h-3 text-gray-400 shrink-0" />
+                      <Warehouse className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <span className="truncate max-w-[120px]">{transfer.toWarehouse}</span>
+                    </div>
+
+                    {/* Row 4: qty + date */}
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>Qty: <span className="font-semibold text-gray-700">{transfer.quantity}</span></span>
+                      <span>{format(transfer.requestDate, "MMM d, yyyy")}</span>
+                    </div>
+
+                    {/* Row 5: update status */}
+                    {transfer.status !== "completed" && transfer.status !== "cancelled" && (
+                      <Select
+                        value={transfer.status}
+                        onValueChange={(value) => handleUpdateTransferStatus(transfer.id, value as StockTransfer["status"])}
+                      >
+                        <SelectTrigger className="w-full h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white">
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="in-transit">In Transit</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* ── Desktop Table View (≥ md) ── */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Transfer ID</TableHead>
+                      <TableHead>Product</TableHead>
+                      <TableHead>From</TableHead>
+                      <TableHead>To</TableHead>
+                      <TableHead className="text-right">Quantity</TableHead>
+                      <TableHead>Request Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {stockTransfers.map((transfer) => (
+                      <TableRow key={transfer.id}>
+                        <TableCell className="font-medium">{transfer.id.toUpperCase()}</TableCell>
+                        <TableCell>{transfer.productName}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Warehouse className="w-4 h-4 text-gray-400" />
+                            {transfer.fromWarehouse}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Warehouse className="w-4 h-4 text-gray-400" />
+                            {transfer.toWarehouse}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">{transfer.quantity}</TableCell>
+                        <TableCell>{format(transfer.requestDate, "MMM d, yyyy")}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="secondary"
+                            className={
+                              transfer.status === "completed"
+                                ? "bg-green-500 text-white"
+                                : transfer.status === "in-transit"
+                                ? "bg-blue-500 text-white"
+                                : transfer.status === "pending"
+                                ? "bg-orange-500 text-white"
+                                : "bg-gray-500 text-white"
+                            }
+                          >
+                            {transfer.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {transfer.status !== "completed" && transfer.status !== "cancelled" && (
+                            <Select
+                              value={transfer.status}
+                              onValueChange={(value) => handleUpdateTransferStatus(transfer.id, value as StockTransfer["status"])}
+                            >
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white">
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="in-transit">In Transit</SelectItem>
+                                <SelectItem value="completed">Completed</SelectItem>
+                                <SelectItem value="cancelled">Cancelled</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Inventory Distribution Tab */}
+        {/* ── Inventory Distribution Tab ── */}
         <TabsContent value="inventory" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Inventory Distribution Across Warehouses</CardTitle>
+              <CardTitle className="text-base sm:text-lg">Inventory Distribution Across Warehouses</CardTitle>
               <CardDescription>View stock levels by location</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {warehouses.map((warehouse) => {
                   const utilization = (warehouse.currentStock / warehouse.capacity) * 100;
                   return (
                     <Card key={warehouse.id} className="border-2">
-                      <CardHeader>
-                        <CardTitle className="text-base">{warehouse.name}</CardTitle>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm sm:text-base">{warehouse.name}</CardTitle>
                         <CardDescription>{warehouse.city}</CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -700,16 +858,16 @@ export function WarehouseManagementView() {
         </TabsContent>
       </Tabs>
 
-      {/* Add/Edit Warehouse Dialog */}
+      {/* ── Add/Edit Warehouse Dialog ── */}
       <Dialog open={isWarehouseDialogOpen} onOpenChange={setIsWarehouseDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{selectedWarehouse ? "Edit Warehouse" : "Add New Warehouse"}</DialogTitle>
             <DialogDescription>
               {selectedWarehouse ? "Update warehouse information" : "Create a new warehouse location"}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Warehouse Name *</Label>
               <Input
@@ -728,7 +886,7 @@ export function WarehouseManagementView() {
                 placeholder="MDC-UK"
               />
             </div>
-            <div className="space-y-2 col-span-2">
+            <div className="space-y-2 col-span-1 sm:col-span-2">
               <Label htmlFor="address">Address</Label>
               <Input
                 id="address"
@@ -773,7 +931,7 @@ export function WarehouseManagementView() {
                 <SelectTrigger id="status">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>
                   <SelectItem value="maintenance">Maintenance</SelectItem>
@@ -798,7 +956,7 @@ export function WarehouseManagementView() {
                 placeholder="+44 20 1234 5678"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 col-span-1 sm:col-span-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
@@ -809,20 +967,20 @@ export function WarehouseManagementView() {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsWarehouseDialogOpen(false)}>
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-0">
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => setIsWarehouseDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={selectedWarehouse ? handleUpdateWarehouse : handleAddWarehouse}>
+            <Button className="w-full sm:w-auto" onClick={selectedWarehouse ? handleUpdateWarehouse : handleAddWarehouse}>
               {selectedWarehouse ? "Update" : "Add"} Warehouse
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Stock Transfer Dialog */}
+      {/* ── Stock Transfer Dialog ── */}
       <Dialog open={isTransferDialogOpen} onOpenChange={setIsTransferDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Stock Transfer</DialogTitle>
             <DialogDescription>Transfer inventory between warehouse locations</DialogDescription>
@@ -837,7 +995,7 @@ export function WarehouseManagementView() {
                 <SelectTrigger id="fromWarehouse">
                   <SelectValue placeholder="Select source warehouse" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   {warehouses.map((wh) => (
                     <SelectItem key={wh.id} value={wh.name}>
                       {wh.name} - {wh.city}
@@ -855,7 +1013,7 @@ export function WarehouseManagementView() {
                 <SelectTrigger id="toWarehouse">
                   <SelectValue placeholder="Select destination warehouse" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   {warehouses.map((wh) => (
                     <SelectItem key={wh.id} value={wh.name}>
                       {wh.name} - {wh.city}
@@ -873,7 +1031,7 @@ export function WarehouseManagementView() {
                 <SelectTrigger id="product">
                   <SelectValue placeholder="Select product" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   {products.map((product) => (
                     <SelectItem key={product.id} value={product.id}>
                       {product.name} (Stock: {product.stock})
@@ -902,11 +1060,47 @@ export function WarehouseManagementView() {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsTransferDialogOpen(false)}>
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-0">
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => setIsTransferDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCreateTransfer}>Create Transfer</Button>
+            <Button className="w-full sm:w-auto" onClick={handleCreateTransfer}>Create Transfer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Warehouse Dialog ── */}
+      <Dialog open={deleteDialog.open} onOpenChange={(o) => !o && setDeleteDialog({ open: false, id: "", name: "" })}>
+        <DialogContent className="w-[90vw] sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="w-5 h-5" />
+              Delete Warehouse
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <strong>"{deleteDialog.name}"</strong>? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 flex-col sm:flex-row pt-2">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={() => setDeleteDialog({ open: false, id: "", name: "" })}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              className="w-full sm:w-auto"
+              onClick={() => {
+                setWarehouses(warehouses.filter((wh) => wh.id !== deleteDialog.id));
+                toast.success("Warehouse deleted successfully");
+                setDeleteDialog({ open: false, id: "", name: "" });
+              }}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

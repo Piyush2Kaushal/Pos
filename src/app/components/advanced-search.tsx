@@ -10,7 +10,7 @@ import {
   ChevronRight,
   Filter,
   Calendar,
-  DollarSign,
+  PoundSterling,
   TrendingUp,
   ShoppingCart,
 } from "lucide-react";

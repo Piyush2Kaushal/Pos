@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { usePOS } from "@/app/context/pos-context";
 import {
-  Search, Plus, Eye, Check, X, DollarSign, Clock, CheckCircle,
+  Search, Plus, Eye, Check, X, PoundSterling, Clock, CheckCircle,
   XCircle, Download, RotateCcw, BarChart3, Microscope, Tag,
   TrendingDown, MessageSquare, Printer, ShieldCheck, Ban,
   ThumbsUp, ThumbsDown, FileText, Package, AlertTriangle,
@@ -525,7 +525,7 @@ export function ReturnManagementView() {
           { label:"Total Returns",  value:stats.total,                        color:"gray",   icon:<RotateCcw className="w-4 h-4"/>   },
           { label:"Pending",        value:stats.pending,                      color:"amber",  icon:<Clock className="w-4 h-4"/>       },
           { label:"Completed",      value:stats.completed,                    color:"green",  icon:<CheckCircle className="w-4 h-4"/> },
-          { label:"Total Refunded", value:`£${stats.totalRefund.toFixed(0)}`, color:"red",    icon:<DollarSign className="w-4 h-4"/>  },
+          { label:"Total Refunded", value:`£${stats.totalRefund.toFixed(0)}`, color:"red",    icon:<PoundSterling className="w-4 h-4"/>  },
           { label:"Damaged Items",  value:damStats.total,                     color:"orange", icon:<PackageX className="w-4 h-4"/>    },
           { label:"Damage Value",   value:`£${damStats.totalValue.toFixed(0)}`,color:"purple",icon:<BadgeAlert className="w-4 h-4"/> },
         ].map(({ label, value, color, icon }) => (
@@ -559,20 +559,20 @@ export function ReturnManagementView() {
           <Card><CardContent className="p-4">
             <div className="flex flex-wrap gap-3 items-center">
               <div className="relative flex-1 min-w-52">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 z-10 pointer-events-none" />
                 <Input placeholder="Search return #, invoice, customer…" value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger>
-                <SelectContent>
+                <SelectContent className='bg-white'>
                   <SelectItem value="all">All Status</SelectItem>
                   {Object.entries(statusConfig).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Select value={reasonFilter} onValueChange={setReasonFilter}>
                 <SelectTrigger className="w-44"><SelectValue placeholder="Reason" /></SelectTrigger>
-                <SelectContent>
+                <SelectContent className='bg-white'>
                   <SelectItem value="all">All Reasons</SelectItem>
                   {Object.entries(reasonLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
                 </SelectContent>
@@ -710,7 +710,7 @@ export function ReturnManagementView() {
               { label:"Total Damaged",    value:damStats.total,                         color:"orange", icon:<PackageX className="w-4 h-4"/>   },
               { label:"Pending Action",   value:damStats.pending,                       color:"amber",  icon:<Clock className="w-4 h-4"/>      },
               { label:"Scrap Items",      value:damStats.scrap,                         color:"red",    icon:<Trash2 className="w-4 h-4"/>     },
-              { label:"Total Value",      value:`£${damStats.totalValue.toFixed(0)}`,   color:"purple", icon:<DollarSign className="w-4 h-4"/> },
+              { label:"Total Value",      value:`£${damStats.totalValue.toFixed(0)}`,   color:"purple", icon:<PoundSterling className="w-4 h-4"/> },
               { label:"Written Off",      value:`£${damStats.writeOffValue.toFixed(0)}`,color:"red",    icon:<CircleOff className="w-4 h-4"/>  },
               { label:"Repaired",         value:damStats.repaired,                      color:"green",  icon:<Wrench className="w-4 h-4"/>     },
             ].map(({ label, value, color, icon }) => (
@@ -733,7 +733,7 @@ export function ReturnManagementView() {
               </div>
               <Select value={damCondFilter} onValueChange={setDamCondFilter}>
                 <SelectTrigger className="w-36"><SelectValue placeholder="Condition" /></SelectTrigger>
-                <SelectContent>
+                <SelectContent className='bg-white'>
                   <SelectItem value="all">All Conditions</SelectItem>
                   <SelectItem value="damaged">Damaged</SelectItem>
                   <SelectItem value="scrap">Scrap</SelectItem>
@@ -741,7 +741,7 @@ export function ReturnManagementView() {
               </Select>
               <Select value={damDispFilter} onValueChange={setDamDispFilter}>
                 <SelectTrigger className="w-48"><SelectValue placeholder="Disposition" /></SelectTrigger>
-                <SelectContent>
+                <SelectContent className='bg-white'>
                   <SelectItem value="all">All Dispositions</SelectItem>
                   {Object.entries(dispositionConfig).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
                 </SelectContent>
@@ -974,134 +974,166 @@ export function ReturnManagementView() {
 
       {/* ════ CREATE RETURN DIALOG ════════════════════════════════════ */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Plus className="w-5 h-5 text-orange-600" />Create Return Note</DialogTitle>
-            <DialogDescription>Select an invoice and specify items being returned</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-5">
-            {!selectedInvoice ? (
-              <div>
-                <Label className="mb-2 block">Select Invoice</Label>
-                <div className="border rounded-xl max-h-80 overflow-y-auto">
-                  {invoices.filter(inv => ["paid", "partially_paid"].includes(inv.status)).map(inv => (
-                    <div key={inv.id} className="p-4 border-b last:border-0 hover:bg-blue-50 cursor-pointer" onClick={() => selectInvoice(inv)}>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-mono font-semibold text-blue-700">{inv.invoiceNumber}</p>
-                          <p className="text-sm font-medium">{inv.customer.name}</p>
-                          <p className="text-xs text-gray-500">{format(new Date(inv.issueDate), "MMM dd, yyyy")}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-lg">£{inv.total.toFixed(2)}</p>
-                          <Badge variant="outline">{inv.lineItems.length} items</Badge>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+  <DialogContent className={cn(
+    // mobile: full screen
+    "w-full max-w-none h-[100dvh] rounded-none",
+    // desktop: constrained modal
+    "sm:max-w-5xl sm:h-auto sm:max-h-[90vh] sm:rounded-2xl",
+    // shared
+    "overflow-hidden flex flex-col p-0 gap-0",
+  )}>
+
+    {/* Header */}
+    <div className="flex items-center gap-2 px-4 sm:px-6 py-4 border-b border-gray-200 shrink-0">
+      <Plus className="w-5 h-5 text-orange-600 shrink-0" />
+      <div>
+        <h2 className="font-bold text-base leading-tight">Create Return Note</h2>
+        <p className="text-xs text-gray-500 mt-0.5">Select an invoice and specify items being returned</p>
+      </div>
+    </div>
+
+    {/* Scrollable body */}
+    <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-5">
+      {!selectedInvoice ? (
+        <div>
+          <Label className="mb-2 block">Select Invoice</Label>
+          <div className="border rounded-xl max-h-[60vh] sm:max-h-80 overflow-y-auto">
+            {invoices.filter(inv => ["paid", "partially_paid"].includes(inv.status)).map(inv => (
+              <div key={inv.id} className="p-4 border-b last:border-0 hover:bg-blue-50 cursor-pointer" onClick={() => selectInvoice(inv)}>
+                <div className="flex justify-between items-start gap-3">
+                  <div className="min-w-0">
+                    <p className="font-mono font-semibold text-blue-700">{inv.invoiceNumber}</p>
+                    <p className="text-sm font-medium truncate">{inv.customer.name}</p>
+                    <p className="text-xs text-gray-500">{format(new Date(inv.issueDate), "MMM dd, yyyy")}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="font-semibold text-lg">£{inv.total.toFixed(2)}</p>
+                    <Badge variant="outline">{inv.lineItems.length} items</Badge>
+                  </div>
                 </div>
               </div>
-            ) : (
-              <>
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex justify-between items-start">
-                  <div>
-                    <p className="font-mono font-bold text-blue-800">{selectedInvoice.invoiceNumber}</p>
-                    <p className="text-sm text-blue-700">{selectedInvoice.customer.name}</p>
-                    <p className="text-xs text-blue-600">Total: £{selectedInvoice.total.toFixed(2)}</p>
-                  </div>
-                  <Button size="sm" variant="outline" onClick={() => setSelectedInvoice(null)}>Change</Button>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-1">
-                    <Label>Return Reason</Label>
-                    <Select value={returnReason} onValueChange={v => setReturnReason(v as ReturnReason)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{Object.entries(reasonLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <Label>Refund Method</Label>
-                    <Select value={refundMethod} onValueChange={setRefundMethod}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {["cash","card","store_credit","credit_note","exchange","original_payment"].map(m =>
-                          <SelectItem key={m} value={m}>{m.replace(/_/g," ")}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <Label>Resolution</Label>
-                    <Select value={resolutionType} onValueChange={v => setResolutionType(v as ResolutionType)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {[["refund","Cash Refund"],["exchange","Exchange"],["store_credit","Store Credit"],["credit_note","Credit Note"],["repair","Repair & Return"]].map(([k,l]) =>
-                          <SelectItem key={k} value={k}>{l}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div>
-                  <Label className="mb-2 block">Items to Return</Label>
-                  <div className="border rounded-xl overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-gray-50">
-                          <TableHead>Product</TableHead><TableHead>SKU</TableHead>
-                          <TableHead className="text-center">Invoiced</TableHead>
-                          <TableHead className="text-center w-28">Return Qty</TableHead>
-                          <TableHead className="text-right">Unit Price</TableHead>
-                          <TableHead className="text-right">Refund</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {returnLineItems.map((item, i) => (
-                          <TableRow key={item.id} className={item.quantityReturned > 0 ? "bg-orange-50" : ""}>
-                            <TableCell className="font-medium text-sm">{item.productName}</TableCell>
-                            <TableCell className="font-mono text-xs text-gray-500">{item.productSku}</TableCell>
-                            <TableCell className="text-center">{item.quantityInvoiced}</TableCell>
-                            <TableCell>
-                              <Input type="number" min={0} max={item.quantityInvoiced} value={item.quantityReturned}
-                                onChange={e => updateLineItem(i, "quantityReturned", parseInt(e.target.value) || 0)}
-                                className="w-24 h-8 text-center text-sm" />
-                            </TableCell>
-                            <TableCell className="text-right text-sm">£{item.unitPrice.toFixed(2)}</TableCell>
-                            <TableCell className="text-right font-bold text-orange-600">£{item.totalRefund.toFixed(2)}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 border rounded-xl p-4 space-y-2 text-sm">
-                    <div className="flex justify-between"><span className="text-gray-600">Subtotal:</span><span>£{returnCalc.sub.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-600">VAT (20%):</span><span>£{returnCalc.tax.toFixed(2)}</span></div>
-                    <div className="flex justify-between items-center border-t pt-2">
-                      <span className="text-gray-600">Restocking Fee:</span>
-                      <Input type="number" min={0} step={0.01} value={restockingFee}
-                        onChange={e => setRestockingFee(parseFloat(e.target.value) || 0)} className="w-28 h-7 text-right text-sm" />
-                    </div>
-                    <div className="flex justify-between text-base font-bold border-t pt-2">
-                      <span>Net Refund:</span><span className="text-orange-600">£{returnCalc.net.toFixed(2)}</span>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                      <Checkbox id="restock" checked={restockItems} onCheckedChange={v => setRestockItems(!!v)} />
-                      <Label htmlFor="restock" className="cursor-pointer text-sm">Restock on completion (via inspection)</Label>
-                    </div>
-                    <Textarea placeholder="Notes…" value={notes} rows={3} onChange={e => setNotes(e.target.value)} />
-                  </div>
-                </div>
-              </>
-            )}
+            ))}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
-            {selectedInvoice && <Button onClick={handleCreate} className="bg-orange-600 hover:bg-orange-700">Create Return Note</Button>}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      ) : (
+        <>
+          {/* Selected invoice banner */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex justify-between items-start gap-3">
+            <div className="min-w-0">
+              <p className="font-mono font-bold text-blue-800">{selectedInvoice.invoiceNumber}</p>
+              <p className="text-sm text-blue-700 truncate">{selectedInvoice.customer.name}</p>
+              <p className="text-xs text-blue-600">Total: £{selectedInvoice.total.toFixed(2)}</p>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => setSelectedInvoice(null)} className="shrink-0">Change</Button>
+          </div>
+
+          {/* Reason / Method / Resolution */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="space-y-1">
+              <Label>Return Reason</Label>
+              <Select value={returnReason} onValueChange={v => setReturnReason(v as ReturnReason)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-white">
+                  {Object.entries(reasonLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Refund Method</Label>
+              <Select value={refundMethod} onValueChange={setRefundMethod}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-white">
+                  {["cash","card","store_credit","credit_note","exchange","original_payment"].map(m =>
+                    <SelectItem key={m} value={m}>{m.replace(/_/g," ")}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Resolution</Label>
+              <Select value={resolutionType} onValueChange={v => setResolutionType(v as ResolutionType)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-white">
+                  {[["refund","Cash Refund"],["exchange","Exchange"],["store_credit","Store Credit"],["credit_note","Credit Note"],["repair","Repair & Return"]].map(([k,l]) =>
+                    <SelectItem key={k} value={k}>{l}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Items table */}
+          <div>
+            <Label className="mb-2 block">Items to Return</Label>
+            <div className="border rounded-xl overflow-hidden overflow-x-auto">
+              <Table className="min-w-[520px]">
+                <TableHeader>
+                  <TableRow className="bg-gray-50">
+                    <TableHead>Product</TableHead>
+                    <TableHead>SKU</TableHead>
+                    <TableHead className="text-center">Invoiced</TableHead>
+                    <TableHead className="text-center w-28">Return Qty</TableHead>
+                    <TableHead className="text-right">Unit Price</TableHead>
+                    <TableHead className="text-right">Refund</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {returnLineItems.map((item, i) => (
+                    <TableRow key={item.id} className={item.quantityReturned > 0 ? "bg-orange-50" : ""}>
+                      <TableCell className="font-medium text-sm">{item.productName}</TableCell>
+                      <TableCell className="font-mono text-xs text-gray-500">{item.productSku}</TableCell>
+                      <TableCell className="text-center">{item.quantityInvoiced}</TableCell>
+                      <TableCell>
+                        <Input type="number" min={0} max={item.quantityInvoiced} value={item.quantityReturned}
+                          onChange={e => updateLineItem(i, "quantityReturned", parseInt(e.target.value) || 0)}
+                          className="w-24 h-8 text-center text-sm" />
+                      </TableCell>
+                      <TableCell className="text-right text-sm">£{item.unitPrice.toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-bold text-orange-600">£{item.totalRefund.toFixed(2)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+
+          {/* Totals + Notes */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-gray-50 border rounded-xl p-4 space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-gray-600">Subtotal:</span><span>£{returnCalc.sub.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-600">VAT (20%):</span><span>£{returnCalc.tax.toFixed(2)}</span></div>
+              <div className="flex justify-between items-center border-t pt-2">
+                <span className="text-gray-600">Restocking Fee:</span>
+                <Input type="number" min={0} step={0.01} value={restockingFee}
+                  onChange={e => setRestockingFee(parseFloat(e.target.value) || 0)} className="w-28 h-7 text-right text-sm" />
+              </div>
+              <div className="flex justify-between text-base font-bold border-t pt-2">
+                <span>Net Refund:</span><span className="text-orange-600">£{returnCalc.net.toFixed(2)}</span>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                <Checkbox id="restock" checked={restockItems} onCheckedChange={v => setRestockItems(!!v)} />
+                <Label htmlFor="restock" className="cursor-pointer text-sm">Restock on completion (via inspection)</Label>
+              </div>
+              <Textarea placeholder="Notes…" value={notes} rows={3} onChange={e => setNotes(e.target.value)} />
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+
+    {/* Footer */}
+    <div className="flex items-center justify-end gap-2 px-4 sm:px-6 py-3.5 border-t border-gray-200 bg-white shrink-0">
+      <Button variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
+      {selectedInvoice && (
+        <Button onClick={handleCreate} className="bg-orange-600 hover:bg-orange-700">
+          <span className="hidden sm:inline">Create Return Note</span>
+          <span className="sm:hidden">Create</span>
+        </Button>
+      )}
+    </div>
+
+  </DialogContent>
+</Dialog>
 
       {/* ════ DETAIL DIALOG ══════════════════════════════════════════ */}
       <Dialog open={showDetailDialog} onOpenChange={() => setShowDetailDialog(false)}>
@@ -1200,7 +1232,7 @@ export function ReturnManagementView() {
               <Label>Rejection Reason</Label>
               <Select value={rejectReason} onValueChange={setRejectReason}>
                 <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
-                <SelectContent>
+                <SelectContent className='bg-white'>
                   {["outside_return_window","item_not_eligible","customer_damage","missing_receipt","partial_return_only","other"].map(r =>
                     <SelectItem key={r} value={r}>{r.replace(/_/g," ")}</SelectItem>)}
                 </SelectContent>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { usePOS } from "@/app/context/pos-context";
-import { Search, FileText, Eye, TrendingUp, DollarSign, Plus, Wallet } from "lucide-react";
+import { Search, FileText, Eye, TrendingUp, PoundSterling, Plus, Wallet } from "lucide-react";
 import { Input } from "@/app/components/ui/input";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
@@ -208,7 +208,7 @@ export function CustomerLedgerView() {
         {/* Filters */}
         <div className="flex gap-4 mb-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 z-10 pointer-events-none" />
             <Input
               type="text"
               placeholder="Search customers..."

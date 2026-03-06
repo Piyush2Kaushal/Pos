@@ -1,4 +1,4 @@
-import { createHashRouter } from "react-router";
+import { createBrowserRouter } from "react-router";
 import { Layout } from "@/app/components/layout";
 import { POSProvider } from "@/app/context/pos-context";
 import { DashboardView } from "@/app/components/dashboard-view";
@@ -67,7 +67,7 @@ function MainAppRoot() {
   );
 }
 
-export const router = createHashRouter([
+export const router = createBrowserRouter([
   { path: "/storefront",     Component: StorefrontRoot },
   { path: "/portal",         Component: PortalRoot },
   { path: "/customer-portal",Component: CustomerPortalRoot },

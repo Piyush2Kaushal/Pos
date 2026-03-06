@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { usePOS } from "@/app/context/pos-context";
-import { Search, DollarSign, TrendingUp } from "lucide-react";
+import { Search, PoundSterling, TrendingUp } from "lucide-react";
 import { Input } from "@/app/components/ui/input";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
@@ -213,20 +213,20 @@ export function PriceManagementView() {
         {/* Filters */}
         <div className="flex gap-4 mb-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 z-10 pointer-events-none" />
             <Input
               type="text"
               placeholder="Search products..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 bg-white"
             />
           </div>
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-48">
+          <SelectTrigger className="w-48 bg-white">
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent  className=" bg-white">
               {categories.map((cat) => (
                 <SelectItem key={cat} value={cat}>
                   {cat}
@@ -304,10 +304,10 @@ export function PriceManagementView() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="wholesalePrice">Wholesale Price</Label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <PoundSterling className="absolute left-3 top-1/2 text-gray-500 -translate-y-1/2 w-4 h-4  z-10 pointer-events-none" />
                 <Input
                   id="wholesalePrice"
                   type="number"
@@ -316,14 +316,14 @@ export function PriceManagementView() {
                   onChange={(e) =>
                     setFormData({ ...formData, wholesalePrice: e.target.value })
                   }
-                  className="pl-10"
+                  className="pl-10 bg-white"
                 />
               </div>
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="traderPrice">Trader Price</Label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <PoundSterling className="absolute left-3 text-gray-500 top-1/2 -translate-y-1/2 w-4 h-4  z-10 pointer-events-none" />
                 <Input
                   id="traderPrice"
                   type="number"
@@ -332,14 +332,14 @@ export function PriceManagementView() {
                   onChange={(e) =>
                     setFormData({ ...formData, traderPrice: e.target.value })
                   }
-                  className="pl-10"
+                  className="pl-10 bg-white"
                 />
               </div>
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="retailPrice">Retail Price</Label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <PoundSterling className="absolute text-gray-500 left-3 top-1/2 -translate-y-1/2 w-4 h-4  z-10 pointer-events-none" />
                 <Input
                   id="retailPrice"
                   type="number"
@@ -348,7 +348,7 @@ export function PriceManagementView() {
                   onChange={(e) =>
                     setFormData({ ...formData, retailPrice: e.target.value })
                   }
-                  className="pl-10"
+                  className="pl-10 bg-white"
                 />
               </div>
             </div>
@@ -378,7 +378,7 @@ export function PriceManagementView() {
                 <SelectTrigger>
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent  className=" bg-white">
                   {categories.map((cat) => (
                     <SelectItem key={cat} value={cat}>
                       {cat}
@@ -396,7 +396,7 @@ export function PriceManagementView() {
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent  className=" bg-white">
                   <SelectItem value="all">All Prices</SelectItem>
                   <SelectItem value="wholesale">Wholesale Only</SelectItem>
                   <SelectItem value="trader">Trader Only</SelectItem>
@@ -415,9 +415,9 @@ export function PriceManagementView() {
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent  className=" bg-white">
                   <SelectItem value="percent">Percentage (%)</SelectItem>
-                  <SelectItem value="amount">Fixed Amount ($)</SelectItem>
+                  <SelectItem value="amount">Fixed Amount (£)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

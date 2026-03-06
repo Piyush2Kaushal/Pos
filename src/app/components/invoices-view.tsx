@@ -123,7 +123,7 @@ export function InvoicesView() {
         {/* Search and Filter */}
         <div className="flex gap-3 mb-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 z-10 pointer-events-none" />
             <Input
               type="text"
               placeholder="Search by invoice ID or customer…"
@@ -136,7 +136,7 @@ export function InvoicesView() {
             <SelectTrigger className="w-44">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className='bg-white'>
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="paid">Paid</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
@@ -444,7 +444,7 @@ export function InvoicesView() {
                           <SelectTrigger className="flex-1 h-9">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className='bg-white'>
                             <SelectItem value="draft">Draft</SelectItem>
                             <SelectItem value="sent">Sent</SelectItem>
                             <SelectItem value="paid">Paid</SelectItem>

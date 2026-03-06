@@ -7,7 +7,7 @@ import {
   BarChart3,
   ShoppingBag,
   Tag,
-  DollarSign,
+  PoundSterling,
   ShoppingCart,
   UserCog,
   RotateCcw,
@@ -57,7 +57,7 @@ const navGroups = [
       { path: "/inventory", label: "Inventory", icon: Package, color: "from-emerald-500 to-teal-500" },
       { path: "/products", label: "Products", icon: ShoppingBag, color: "from-purple-500 to-pink-500" },
       { path: "/categories", label: "Categories", icon: Tag, color: "from-amber-500 to-orange-500" },
-      { path: "/prices", label: "Pricing", icon: DollarSign, color: "from-green-500 to-emerald-500" },
+      { path: "/prices", label: "Pricing", icon: PoundSterling, color: "from-green-500 to-emerald-500" },
       { path: "/warehouse", label: "Warehouse", icon: Warehouse, color: "from-teal-500 to-cyan-500" },
       { path: "/product-shelving", label: "Shelving", icon: Archive, color: "from-purple-600 to-violet-600" },
     ],
@@ -143,9 +143,11 @@ export function Layout() {
 
         {/* Logo & Brand */}
         <div className="flex items-center gap-3 relative z-10 shrink-0">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-blue-500/25 ring-1 ring-white/20">
-            <Smartphone className="w-5 h-5 text-white" />
-          </div>
+        <Link to="/">
+  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-blue-500/25 ring-1 ring-white/20 cursor-pointer">
+    <Smartphone className="w-5 h-5 text-white" />
+  </div>
+</Link>
           <div className="hidden sm:block">
             <div className="font-bold text-lg leading-none bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent">
               BNM Parts

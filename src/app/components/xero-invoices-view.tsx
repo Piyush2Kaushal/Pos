@@ -9,7 +9,7 @@ import {
   Edit,
   Send,
   Copy,
-  DollarSign,
+  PoundSterling,
   Clock,
   CheckCircle,
   XCircle,
@@ -85,6 +85,11 @@ export function XeroInvoicesView() {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; invoiceId: string; invoiceNumber: string }>({
+    open: false,
+    invoiceId: "",
+    invoiceNumber: "",
+  });
 
   // Invoice form state
   const [invoiceForm, setInvoiceForm] = useState<Partial<Invoice>>({
@@ -730,7 +735,7 @@ export function XeroInvoicesView() {
         {/* Search and Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 z-10 pointer-events-none" />
             <Input
               type="text"
               placeholder="Search invoices..."
@@ -745,7 +750,7 @@ export function XeroInvoicesView() {
               <Filter className="w-4 h-4 mr-2" />
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className='bg-white'>
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="draft">Draft</SelectItem>
               <SelectItem value="sent">Sent</SelectItem>
@@ -761,7 +766,7 @@ export function XeroInvoicesView() {
               <Calendar className="w-4 h-4 mr-2" />
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className='bg-white'>
               <SelectItem value="all">All Time</SelectItem>
               <SelectItem value="today">Today</SelectItem>
               <SelectItem value="week">Last 7 Days</SelectItem>
@@ -902,7 +907,7 @@ export function XeroInvoicesView() {
                                   setPaymentForm({ ...paymentForm, amount: invoice.amountDue });
                                   setShowPaymentDialog(true);
                                 }}>
-                                  <DollarSign className="w-4 h-4 mr-2" />
+                                  <PoundSterling className="w-4 h-4 mr-2" />
                                   Record Payment
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={(e) => {
@@ -940,17 +945,15 @@ export function XeroInvoicesView() {
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 
-                              className="text-red-600"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (confirm("Are you sure you want to delete this invoice?")) {
-                                  deleteInvoice(invoice.id);
-                                }
-                              }}
-                            >
-                              <XCircle className="w-4 h-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
+  className="text-red-600"
+  onClick={(e) => {
+    e.stopPropagation();
+    setDeleteDialog({ open: true, invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber });
+  }}
+>
+  <XCircle className="w-4 h-4 mr-2" />
+  Delete
+</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -970,37 +973,34 @@ export function XeroInvoicesView() {
 
       {/* ════ MERGE DIALOG ════ */}
       <Dialog open={showMergeDialog} onOpenChange={setShowMergeDialog}>
-        <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden flex flex-col p-0 gap-0">
+        {/*
+          p-0 + gap-0 → we control all internal spacing ourselves.
+          DialogContent already renders its own close (×) button in the top-right,
+          so the manual <button><X/></button> has been removed to fix the double-icon bug.
+        */}
+        <DialogContent className="max-w-8xl min-w-4xl w-[100vw] max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0">
 
-          {/* Accessible title/description — visually hidden, replaced by custom header below */}
-          <DialogHeader className="sr-only">
-            <DialogTitle>Merge Invoices</DialogTitle>
-            <DialogDescription>
-              Select any invoices — from the same or different customers — and merge them into one new draft invoice.
-            </DialogDescription>
-          </DialogHeader>
-
-          {/* Visual Header */}
-          <div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b shrink-0 bg-gradient-to-r from-blue-50 to-indigo-50">
+          {/* ── Header ── DialogHeader now IS the visual header (no sr-only hack needed) */}
+          <DialogHeader className="flex-row items-center gap-3 px-6 pt-5 pb-4 border-b shrink-0 bg-gradient-to-r from-blue-50 to-indigo-50 space-y-0">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md shrink-0">
               <GitMerge className="w-5 h-5 text-white" />
             </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-lg font-bold text-gray-900">Merge Invoices</h2>
-              <p className="text-xs text-gray-500">
+            <div className="flex-1 min-w-0 pr-8">
+              <DialogTitle className="text-lg font-bold text-gray-900 leading-tight">
+                Merge Invoices
+              </DialogTitle>
+              <DialogDescription className="text-xs text-gray-500 mt-0.5">
                 Select any invoices — from the same or different customers — and merge them into one new draft invoice.
-              </p>
+              </DialogDescription>
             </div>
-            <button onClick={() => setShowMergeDialog(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+            {/* shadcn's DialogContent renders its own × button here automatically */}
+          </DialogHeader>
 
-          {/* Two-column body */}
-          <div className="flex flex-1 overflow-hidden">
+          {/* ── Two-column body ── */}
+          <div className="flex flex-1 overflow-hidden min-h-0">
 
             {/* LEFT — Invoice picker */}
-            <div className="w-[52%] border-r flex flex-col overflow-hidden">
+            <div className="w-[52%] border-r flex flex-col overflow-hidden min-h-0">
               <div className="px-4 pt-4 pb-3 border-b shrink-0">
                 <div className="flex items-center gap-2 mb-2">
                   <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest flex-1">Select Invoices</h3>
@@ -1103,7 +1103,7 @@ export function XeroInvoicesView() {
             </div>
 
             {/* RIGHT — Configuration */}
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden min-h-0">
               <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
 
                 {/* Bill To Customer */}
@@ -1126,7 +1126,7 @@ export function XeroInvoicesView() {
                     <SelectTrigger className="h-9">
                       <SelectValue placeholder="Select customer for merged invoice…" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className='bg-white'>
                       {customers.map(c => (
                         <SelectItem key={c.id} value={c.id}>
                           <div className="flex items-center gap-2">
@@ -1150,7 +1150,7 @@ export function XeroInvoicesView() {
                       <SelectTrigger className="h-9">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className='bg-white'>
                         <SelectItem value="due_on_receipt">Due on Receipt</SelectItem>
                         <SelectItem value="net_7">Net 7</SelectItem>
                         <SelectItem value="net_15">Net 15</SelectItem>
@@ -1268,7 +1268,7 @@ export function XeroInvoicesView() {
               </div>
 
               {/* Footer */}
-              <div className="px-5 py-3.5 border-t bg-gray-50 flex items-center justify-between shrink-0">
+              <div className="px-5 py-4 border-t bg-gray-50 flex items-center justify-between shrink-0 gap-3">
                 <Button variant="outline" size="sm" onClick={() => setShowMergeDialog(false)}>Cancel</Button>
                 <Button
                   disabled={!isMergeValid}
@@ -1291,13 +1291,12 @@ export function XeroInvoicesView() {
       </Dialog>
 
       {/* Invoice Detail Dialog */}
+      <div className="flex items-center gap-3 flex-wrap pr-8">
       <Dialog open={selectedInvoice !== null && !showInvoiceDialog && !showPaymentDialog} onOpenChange={() => setSelectedInvoice(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-8xl min-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>Invoice {selectedInvoice?.invoiceNumber}</span>
-              {selectedInvoice && getStatusBadge(selectedInvoice)}
-            </DialogTitle>
+          <DialogTitle>Invoice {selectedInvoice?.invoiceNumber}</DialogTitle>
+  {selectedInvoice && getStatusBadge(selectedInvoice)}
             <DialogDescription>
               View and manage invoice details
             </DialogDescription>
@@ -1491,7 +1490,7 @@ export function XeroInvoicesView() {
                             <div key={payment.id} className="flex items-center justify-between p-4 border rounded-lg">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <DollarSign className="w-4 h-4 text-green-600" />
+                                  <PoundSterling className="w-4 h-4 text-green-600" />
                                   <span className="font-semibold text-green-600">£{payment.amount.toFixed(2)}</span>
                                   <Badge variant="outline" className="text-xs">
                                     {payment.method}
@@ -1512,7 +1511,7 @@ export function XeroInvoicesView() {
                         </div>
                       ) : (
                         <div className="text-center py-8 text-gray-500">
-                          <DollarSign className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                          <PoundSterling className="w-12 h-12 mx-auto mb-2 opacity-50" />
                           <p>No payments recorded yet</p>
                         </div>
                       )}
@@ -1600,7 +1599,7 @@ export function XeroInvoicesView() {
                     setPaymentForm({ ...paymentForm, amount: selectedInvoice.amountDue });
                     setShowPaymentDialog(true);
                   }}>
-                    <DollarSign className="w-4 h-4 mr-2" />
+                    <PoundSterling className="w-4 h-4 mr-2" />
                     Record Payment
                   </Button>
                 )}
@@ -1609,10 +1608,11 @@ export function XeroInvoicesView() {
           )}
         </DialogContent>
       </Dialog>
+      </div>
 
       {/* Create/Edit Invoice Dialog */}
       <Dialog open={showInvoiceDialog} onOpenChange={setShowInvoiceDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-8xl min-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {isCreatingNew ? "Create New Invoice" : "Edit Invoice"}
@@ -1639,7 +1639,7 @@ export function XeroInvoicesView() {
                   <SelectTrigger>
                     <SelectValue placeholder="Select customer" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className='bg-white'>
                     {customers.map(customer => (
                       <SelectItem key={customer.id} value={customer.id}>
                         {customer.name} ({customer.type})
@@ -1660,7 +1660,7 @@ export function XeroInvoicesView() {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className='bg-white'>
                     <SelectItem value="due_on_receipt">Due on Receipt</SelectItem>
                     <SelectItem value="net_7">Net 7</SelectItem>
                     <SelectItem value="net_15">Net 15</SelectItem>
@@ -1955,7 +1955,7 @@ export function XeroInvoicesView() {
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className='bg-white'>
                   <SelectItem value="cash">Cash</SelectItem>
                   <SelectItem value="card">Card</SelectItem>
                   <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
@@ -1999,12 +1999,48 @@ export function XeroInvoicesView() {
               Cancel
             </Button>
             <Button onClick={handleRecordPayment} disabled={!paymentForm.amount || paymentForm.amount <= 0}>
-              <DollarSign className="w-4 h-4 mr-2" />
+              <PoundSterling className="w-4 h-4 mr-2" />
               Record Payment
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ════ DELETE INVOICE DIALOG ════ */}
+<Dialog open={deleteDialog.open} onOpenChange={(o) => !o && setDeleteDialog({ open: false, invoiceId: "", invoiceNumber: "" })}>
+  <DialogContent className="w-[90vw] sm:max-w-[400px]">
+    <DialogHeader>
+      <DialogTitle className="flex items-center gap-2 text-red-600">
+        <AlertCircle className="w-5 h-5" />
+        Delete Invoice
+      </DialogTitle>
+      <DialogDescription>
+        Are you sure you want to delete invoice <strong>"{deleteDialog.invoiceNumber}"</strong>? This action cannot be undone.
+      </DialogDescription>
+    </DialogHeader>
+    <DialogFooter className="gap-2 flex-col sm:flex-row pt-2">
+      <Button
+        variant="outline"
+        className="w-full sm:w-auto"
+        onClick={() => setDeleteDialog({ open: false, invoiceId: "", invoiceNumber: "" })}
+      >
+        Cancel
+      </Button>
+      <Button
+        variant="destructive"
+        className="w-full sm:w-auto"
+        onClick={() => {
+          deleteInvoice(deleteDialog.invoiceId);
+          toast.success("Invoice deleted successfully");
+          setDeleteDialog({ open: false, invoiceId: "", invoiceNumber: "" });
+        }}
+      >
+        <Trash2 className="w-4 h-4 mr-2" />
+        Delete
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
 
       {/* Email Invoice Dialog */}
       <EmailInvoiceDialog

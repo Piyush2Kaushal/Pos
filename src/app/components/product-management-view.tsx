@@ -3,7 +3,7 @@ import { usePOS } from "@/app/context/pos-context";
 import {
   Search, Plus, Edit, Trash2, Package, CheckSquare, Square,
   ChevronUp, ChevronDown, ChevronsUpDown, Filter, X, Download,
-  Upload, Undo2, Eye, EyeOff, MoreHorizontal, Tag, DollarSign,
+  Upload, Undo2, Eye, EyeOff, MoreHorizontal, Tag, PoundSterling,
   Layers, Hash, RefreshCw, CheckCircle2, AlertTriangle,
   BarChart3, Settings2, FileSpreadsheet, Percent, ArrowUpDown,
   PencilLine, Save, Ban, Wand2, Copy, Clipboard, ImageIcon, Link,
@@ -95,6 +95,13 @@ export function ProductManagementView() {
   const [showFilters,    setShowFilters]    = useState(false);
   const [currentPage,    setCurrentPage]    = useState(1);
   const PAGE_SIZE = 25;
+
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+    onConfirm: () => void;
+  }>({ open: false, title: "", description: "", onConfirm: () => {} });
 
   // ── Column visibility ──
   const [visibleCols, setVisibleCols] = useState({
@@ -273,9 +280,14 @@ export function ProductManagementView() {
     setIsAddDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Delete this product?")) { deleteProduct(id); toast.success("Deleted"); }
-  };
+ const handleDelete = (id: string, name: string) => {
+  setConfirmDialog({
+    open: true,
+    title: "Delete Product",
+    description: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
+    onConfirm: () => { deleteProduct(id); toast.success("Deleted"); },
+  });
+};
 
   // ─── Image upload ─────────────────────────────────────────────────────────
   const handleImageFile = (file: File) => {
@@ -381,10 +393,18 @@ export function ProductManagementView() {
       });
       toast.success(`SKUs regenerated for ${selectedIds.size} products`);
     } else if (bulkTab === "delete") {
-      if (!confirm(`Delete ${selectedIds.size} products? This cannot be undone.`)) return;
-      selectedIds.forEach(id => deleteProduct(id));
-      toast.success(`${selectedIds.size} products deleted`);
-      clearSelection();
+      setIsBulkDialogOpen(false);
+      setConfirmDialog({
+        open: true,
+        title: "Bulk Delete Products",
+        description: `Are you sure you want to permanently delete ${selectedIds.size} products? This cannot be undone.`,
+        onConfirm: () => {
+          selectedIds.forEach(id => deleteProduct(id));
+          toast.success(`${selectedIds.size} products deleted`);
+          clearSelection();
+        },
+      });
+      return;
     }
 
     setIsBulkDialogOpen(false);
@@ -393,11 +413,17 @@ export function ProductManagementView() {
 
   // ─── Bulk delete shortcut ─────────────────────────────────────────────────
   const handleBulkDelete = () => {
-    if (!confirm(`Delete ${selectedIds.size} selected products?`)) return;
-    saveUndo();
-    selectedIds.forEach(id => deleteProduct(id));
-    toast.success(`${selectedIds.size} products deleted`);
-    clearSelection();
+    setConfirmDialog({
+      open: true,
+      title: "Delete Selected Products",
+      description: `Are you sure you want to delete ${selectedIds.size} selected products? This action cannot be undone.`,
+      onConfirm: () => {
+        saveUndo();
+        selectedIds.forEach(id => deleteProduct(id));
+        toast.success(`${selectedIds.size} products deleted`);
+        clearSelection();
+      },
+    });
   };
 
   // ─── Export ──────────────────────────────────────────────────────────────
@@ -545,7 +571,7 @@ export function ProductManagementView() {
           { label:"Total Products",  value:products.length,           color:"blue",   icon:<Package className="w-4 h-4"/>    },
           { label:"Categories",      value:categories.length,         color:"purple", icon:<Tag className="w-4 h-4"/>        },
           { label:"Total Stock",     value:products.reduce((s,p)=>s+p.stock,0), color:"indigo",icon:<Layers className="w-4 h-4"/>  },
-          { label:"Inventory Value", value:`£${totalValue.toFixed(0)}`, color:"green", icon:<DollarSign className="w-4 h-4"/>},
+          { label:"Inventory Value", value:`£${totalValue.toFixed(0)}`, color:"green", icon:<PoundSterling className="w-4 h-4"/>},
           { label:"Low / Out Stock", value:`${lowStock} / ${outOfStock}`, color:"red", icon:<AlertTriangle className="w-4 h-4"/>},
         ].map(({ label, value, color, icon }) => (
           <Card key={label} className={`border-l-4 border-l-${color}-500`}>
@@ -562,7 +588,7 @@ export function ProductManagementView() {
         <CardContent className="p-4 space-y-3">
           <div className="flex flex-wrap gap-3 items-center">
             <div className="relative flex-1 min-w-52">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 z-10 pointer-events-none" />
               <Input placeholder="Search name, SKU, category…" value={searchTerm}
                 onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-10"/>
             </div>
@@ -815,7 +841,7 @@ export function ProductManagementView() {
                         <Button size="sm" variant="ghost" onClick={() => handleDuplicate(p)} title="Duplicate">
                           <Copy className="w-3.5 h-3.5 text-gray-500"/>
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleDelete(p.id)} title="Delete" className="text-red-500 hover:text-red-700">
+                        <Button size="sm" variant="ghost" onClick={() => handleDelete(p.id, p.name)} title="Delete" className="text-red-500 hover:text-red-700">
                           <Trash2 className="w-3.5 h-3.5"/>
                         </Button>
                       </div>
@@ -867,7 +893,7 @@ export function ProductManagementView() {
 
           <Tabs value={bulkTab} onValueChange={v => setBulkTab(v as BulkTab)}>
             <TabsList className="grid grid-cols-5 w-full">
-              <TabsTrigger value="price"    className="text-xs gap-1"><DollarSign className="w-3 h-3"/>Price</TabsTrigger>
+              <TabsTrigger value="price"    className="text-xs gap-1"><PoundSterling className="w-3 h-3"/>Price</TabsTrigger>
               <TabsTrigger value="stock"    className="text-xs gap-1"><Layers className="w-3 h-3"/>Stock</TabsTrigger>
               <TabsTrigger value="category" className="text-xs gap-1"><Tag className="w-3 h-3"/>Category</TabsTrigger>
               <TabsTrigger value="sku"      className="text-xs gap-1"><Hash className="w-3 h-3"/>SKU</TabsTrigger>
@@ -1188,6 +1214,39 @@ export function ProductManagementView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+
+      {/* ════ CONFIRM DIALOG ════ */}
+<Dialog open={confirmDialog.open} onOpenChange={(o) => !o && setConfirmDialog(d => ({ ...d, open: false }))}>
+  <DialogContent className="w-[90vw] sm:max-w-[400px]">
+    <DialogHeader>
+      <DialogTitle className="flex items-center gap-2 text-red-600">
+        <AlertTriangle className="w-5 h-5" />
+        {confirmDialog.title}
+      </DialogTitle>
+      <DialogDescription>{confirmDialog.description}</DialogDescription>
+    </DialogHeader>
+    <DialogFooter className="gap-2 flex-col sm:flex-row pt-2">
+      <Button
+        variant="outline"
+        className="w-full sm:w-auto"
+        onClick={() => setConfirmDialog(d => ({ ...d, open: false }))}
+      >
+        Cancel
+      </Button>
+      <Button
+        variant="destructive"
+        className="w-full sm:w-auto"
+        onClick={() => {
+          confirmDialog.onConfirm();
+          setConfirmDialog(d => ({ ...d, open: false }));
+        }}
+      >
+        Confirm Delete
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
 
       {/* ════ VARIANT MANAGEMENT DIALOG ════════════════════════════════════ */}
       {variantProduct && (

@@ -24,7 +24,7 @@ import {
   FileText,
   AlertTriangle,
   ShoppingCart,
-  DollarSign,
+  PoundSterling,
   RotateCcw,
   ArrowUpRight,
   ArrowDownRight,
@@ -301,7 +301,7 @@ export function DashboardView() {
         </div>
         <div className="flex gap-2 flex-wrap">
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/sales")}
             className="flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-md hover:shadow-lg transition-all"
           >
             <Smartphone className="w-4 h-4" /> New Sale
@@ -644,7 +644,7 @@ export function DashboardView() {
           <SectionHeader title="Quick Actions" sub="Jump to common tasks" />
           <div className="grid grid-cols-2 gap-2.5">
             {[
-              { label: "New Sale",      icon: Smartphone,  gradient: "from-blue-500 to-blue-600",     path: "/" },
+              { label: "New Sale",      icon: Smartphone,  gradient: "from-blue-500 to-blue-600",     path: "/sales" },
               { label: "Add Product",   icon: Package,     gradient: "from-emerald-500 to-teal-600",   path: "/products" },
               { label: "Customers",     icon: Users,       gradient: "from-rose-500 to-pink-600",      path: "/customers" },
               { label: "Invoices",      icon: FileText,    gradient: "from-sky-500 to-blue-600",       path: "/invoices" },

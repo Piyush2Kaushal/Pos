@@ -184,6 +184,28 @@ export function ProductShelvingView() {
   });
   const [restockQty, setRestockQty] = useState(20);
 
+
+  // Add these alongside your existing dialog states
+const [deleteShelfDialog, setDeleteShelfDialog] = useState<{ open: boolean; shelfId: string; shelfCode: string }>({
+  open: false,
+  shelfId: "",
+  shelfCode: "",
+});
+
+const [deleteMappingDialog, setDeleteMappingDialog] = useState<{ open: boolean; mappingId: string; productName: string }>({
+  open: false,
+  mappingId: "",
+  productName: "",
+});
+
+
+const [shelfProductsDialog, setShelfProductsDialog] = useState<{
+  open: boolean;
+  shelf: ShelfLocation | null;
+}>({
+  open: false,
+  shelf: null,
+});
   // ─ Derived / computed ─
   const zones = useMemo(() => Array.from(new Set(shelves.map(s => s.zone))).sort(), [shelves]);
   const allBrands = useMemo(() => Array.from(new Set(mappings.map(m => m.brand))).sort(), [mappings]);
@@ -479,27 +501,27 @@ export function ProductShelvingView() {
             <CardContent className="p-4">
               <div className="flex flex-wrap gap-3 items-end">
                 <div className="relative flex-1 min-w-48">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 z-10 pointer-events-none" />
                   <Input placeholder="Search product, SKU, shelf, brand…" value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)} className="pl-10"/>
                 </div>
                 <Select value={filterZone} onValueChange={setFilterZone}>
                   <SelectTrigger className="w-36"><SelectValue placeholder="Zone"/></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className='bg-white'>
                     <SelectItem value="all">All Zones</SelectItem>
                     {zones.map(z => <SelectItem key={z} value={z}>{z}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <Select value={filterBrand} onValueChange={setFilterBrand}>
                   <SelectTrigger className="w-36"><SelectValue placeholder="Brand"/></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className='bg-white'>
                     <SelectItem value="all">All Brands</SelectItem>
                     {allBrands.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <Select value={filterPartType} onValueChange={setFilterPartType}>
                   <SelectTrigger className="w-44"><SelectValue placeholder="Part Type"/></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className='bg-white'>
                     <SelectItem value="all">All Part Types</SelectItem>
                     {allPartTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                   </SelectContent>
@@ -600,9 +622,9 @@ export function ProductShelvingView() {
                             <Button size="sm" variant="ghost" title="Label" onClick={() => { setSelectedMapping(m); setIsLabelDialogOpen(true); }}>
                               <Printer className="w-3.5 h-3.5 text-gray-500"/>
                             </Button>
-                            <Button size="sm" variant="ghost" title="Remove" onClick={() => handleRemoveMapping(m.id)} className="text-red-500 hover:text-red-700">
-                              <Trash2 className="w-3.5 h-3.5"/>
-                            </Button>
+                            <Button size="sm" variant="ghost" title="Remove" onClick={() => setDeleteMappingDialog({ open: true, mappingId: m.id, productName: m.productName })} className="text-red-500 hover:text-red-700">
+  <Trash2 className="w-3.5 h-3.5"/>
+</Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -625,14 +647,14 @@ export function ProductShelvingView() {
                 </div>
                 <Select value={filterZone} onValueChange={setFilterZone}>
                   <SelectTrigger className="w-36"><SelectValue placeholder="Zone"/></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className='bg-white'>
                     <SelectItem value="all">All Zones</SelectItem>
                     {zones.map(z => <SelectItem key={z} value={z}>{z}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
                   <SelectTrigger className="w-36"><SelectValue placeholder="Status"/></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className='bg-white'>
                     <SelectItem value="all">All Statuses</SelectItem>
                     <SelectItem value="available">Available</SelectItem>
                     <SelectItem value="occupied">Occupied</SelectItem>
@@ -700,18 +722,23 @@ export function ProductShelvingView() {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-0.5">
-                            <Button size="sm" variant="ghost" title={`${prods.length} product(s)`}>
-                              <Package className="w-3.5 h-3.5 text-blue-500"/>
-                            </Button>
+                          <Button
+  size="sm"
+  variant="ghost"
+  title={`${prods.length} product(s)`}
+  onClick={() => setShelfProductsDialog({ open: true, shelf })}
+>
+  <Package className="w-3.5 h-3.5 text-blue-500"/>
+</Button>
                             <Button size="sm" variant="ghost" onClick={() => { setSelectedMapping(null); setIsLabelDialogOpen(true); setSelectedShelf(shelf); }}>
                               <Printer className="w-3.5 h-3.5 text-gray-500"/>
                             </Button>
                             <Button size="sm" variant="ghost" onClick={() => openEditShelf(shelf)}>
                               <Edit className="w-3.5 h-3.5 text-gray-600"/>
                             </Button>
-                            <Button size="sm" variant="ghost" onClick={() => handleDeleteShelf(shelf.id)} className="text-red-500 hover:text-red-700">
-                              <Trash2 className="w-3.5 h-3.5"/>
-                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setDeleteShelfDialog({ open: true, shelfId: shelf.id, shelfCode: shelf.fullCode })} className="text-red-500 hover:text-red-700">
+  <Trash2 className="w-3.5 h-3.5"/>
+</Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -1138,7 +1165,7 @@ export function ProductShelvingView() {
               <Label>Temperature</Label>
               <Select value={shelfForm.temperature} onValueChange={v => setShelfForm({...shelfForm, temperature:v as any})}>
                 <SelectTrigger><SelectValue/></SelectTrigger>
-                <SelectContent>
+                <SelectContent className='bg-white'>
                   <SelectItem value="ambient">Ambient</SelectItem>
                   <SelectItem value="cold">Cold (2–8°C)</SelectItem>
                   <SelectItem value="frozen">Frozen (&lt;-18°C)</SelectItem>
@@ -1149,7 +1176,7 @@ export function ProductShelvingView() {
               <Label>Status</Label>
               <Select value={shelfForm.status} onValueChange={v => setShelfForm({...shelfForm, status:v as any})}>
                 <SelectTrigger><SelectValue/></SelectTrigger>
-                <SelectContent>
+                <SelectContent className='bg-white'>
                   <SelectItem value="available">Available</SelectItem>
                   <SelectItem value="occupied">Occupied</SelectItem>
                   <SelectItem value="reserved">Reserved</SelectItem>
@@ -1184,7 +1211,7 @@ export function ProductShelvingView() {
               <Label>Product *</Label>
               <Select value={mappingForm.productId} onValueChange={v => setMappingForm({...mappingForm, productId:v})}>
                 <SelectTrigger><SelectValue placeholder="Select product…"/></SelectTrigger>
-                <SelectContent className="max-h-56">
+                <SelectContent className="max-h-56 bg-white">
                   {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name} — {p.sku}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -1193,14 +1220,14 @@ export function ProductShelvingView() {
               <Label>Brand</Label>
               <Select value={mappingForm.brand} onValueChange={v => setMappingForm({...mappingForm, brand:v})}>
                 <SelectTrigger><SelectValue placeholder="Brand…"/></SelectTrigger>
-                <SelectContent>{BRANDS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent>
+                <SelectContent className='bg-white'>{BRANDS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1">
               <Label>Part Type</Label>
               <Select value={mappingForm.partType} onValueChange={v => setMappingForm({...mappingForm, partType:v})}>
                 <SelectTrigger><SelectValue placeholder="Part type…"/></SelectTrigger>
-                <SelectContent>{PART_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                <SelectContent className='bg-white'>{PART_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="col-span-2 space-y-1">
@@ -1211,7 +1238,7 @@ export function ProductShelvingView() {
               <Label>Shelf Location *</Label>
               <Select value={mappingForm.shelfId} onValueChange={v => setMappingForm({...mappingForm, shelfId:v})}>
                 <SelectTrigger><SelectValue placeholder="Select shelf…"/></SelectTrigger>
-                <SelectContent>
+                <SelectContent className='bg-white'>
                   {shelves.filter(s => s.status !== "maintenance").map(s => (
                     <SelectItem key={s.id} value={s.id}>
                       {s.fullCode} · {s.zone} (free: {s.capacity - s.currentOccupancy})
@@ -1262,7 +1289,7 @@ export function ProductShelvingView() {
                 <Label>Destination Shelf *</Label>
                 <Select value={transferForm.toShelfId} onValueChange={v => setTransferForm({...transferForm, toShelfId:v})}>
                   <SelectTrigger><SelectValue placeholder="Select destination…"/></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className='bg-white '>
                     {shelves.filter(s => s.id !== selectedMapping.shelfLocation.id && s.status !== "maintenance").map(s => (
                       <SelectItem key={s.id} value={s.id}>{s.fullCode} · {s.zone} (free: {s.capacity - s.currentOccupancy})</SelectItem>
                     ))}
@@ -1358,45 +1385,555 @@ export function ProductShelvingView() {
       </Dialog>
 
       {/* Label Preview */}
-      <Dialog open={isLabelDialogOpen} onOpenChange={setIsLabelDialogOpen}>
-        <DialogContent className="sm:max-w-[380px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Printer className="w-5 h-5"/>Shelf Label</DialogTitle>
-            <DialogDescription>Preview of printable shelf label</DialogDescription>
-          </DialogHeader>
-          {selectedMapping && (
-            <div className="border-2 border-dashed border-gray-300 rounded-xl p-5 text-center space-y-2 bg-white">
-              <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">BNM Parts · Shelf Label</div>
-              <div className="text-4xl font-black font-mono text-gray-900">{selectedMapping.shelfLocation.fullCode}</div>
-              <div className="text-sm font-semibold text-purple-600">{selectedMapping.shelfLocation.zone}</div>
-              <div className="border-t pt-3 space-y-1">
-                <div className="font-semibold text-sm">{selectedMapping.productName}</div>
-                <div className="font-mono text-xs text-gray-500">{selectedMapping.productSKU}</div>
-                <div className="flex justify-center gap-2 mt-2">
-                  <Badge variant="outline">{selectedMapping.brand}</Badge>
-                  <Badge variant="outline">{selectedMapping.partType}</Badge>
-                </div>
+     {/* Label Preview */}
+<Dialog open={isLabelDialogOpen} onOpenChange={setIsLabelDialogOpen}>
+  <DialogContent className="sm:max-w-[380px]">
+    <DialogHeader>
+      <DialogTitle className="flex items-center gap-2">
+        <Printer className="w-5 h-5" />
+        Shelf Label
+      </DialogTitle>
+      <DialogDescription>Preview of printable shelf label</DialogDescription>
+    </DialogHeader>
+
+    {/* ─── Case 1: Product-specific label (from Product Locations tab) ─── */}
+    {selectedMapping && (
+      <div className="border-2 border-dashed border-gray-300 rounded-xl p-5 text-center space-y-2 bg-white">
+        <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+          BNM Parts · Shelf Label
+        </div>
+        <div className="text-4xl font-black font-mono text-gray-900">
+          {selectedMapping.shelfLocation.fullCode}
+        </div>
+        <div className="text-sm font-semibold text-purple-600">
+          {selectedMapping.shelfLocation.zone}
+        </div>
+        <div className="border-t pt-3 space-y-1">
+          <div className="font-semibold text-sm">{selectedMapping.productName}</div>
+          <div className="font-mono text-xs text-gray-500">
+            {selectedMapping.productSKU}
+          </div>
+          <div className="flex justify-center gap-2 mt-2">
+            <Badge variant="outline">{selectedMapping.brand}</Badge>
+            <Badge variant="outline">{selectedMapping.partType}</Badge>
+          </div>
+        </div>
+        <div className="text-xs text-gray-400 pt-1">
+          Min: {selectedMapping.minQuantity} · Reorder:{" "}
+          {selectedMapping.reorderPoint}
+        </div>
+        {/* Barcode placeholder */}
+        <div className="flex justify-center mt-2">
+          <div className="flex gap-px h-10">
+            {selectedMapping.productSKU.split("").map((_, i) => (
+              <div
+                key={i}
+                className="bg-gray-900"
+                style={{
+                  width: i % 3 === 0 ? 3 : i % 2 === 0 ? 2 : 1,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+        <div className="text-[10px] font-mono text-gray-500">
+          {selectedMapping.productSKU}
+        </div>
+      </div>
+    )}
+
+    {/* ─── Case 2: Shelf-only label (from Shelves tab) ─── */}
+    {!selectedMapping && selectedShelf && (() => {
+      const shelfProducts = mappings.filter(
+        (m) => m.shelfLocation.id === selectedShelf.id
+      );
+      const util =
+        selectedShelf.capacity > 0
+          ? Math.round(
+              (selectedShelf.currentOccupancy / selectedShelf.capacity) * 100
+            )
+          : 0;
+      return (
+        <div className="border-2 border-dashed border-gray-300 rounded-xl p-5 text-center space-y-2 bg-white">
+          <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+            BNM Parts · Shelf Label
+          </div>
+          <div className="text-4xl font-black font-mono text-gray-900">
+            {selectedShelf.fullCode}
+          </div>
+          <div className="text-sm font-semibold text-purple-600">
+            {selectedShelf.zone}
+          </div>
+
+          {/* Shelf meta */}
+          <div className="grid grid-cols-3 gap-2 border-t pt-3 text-xs">
+            <div className="bg-gray-50 rounded p-1.5">
+              <div className="font-bold text-gray-700">
+                {selectedShelf.capacity}
               </div>
-              <div className="text-xs text-gray-400 pt-1">Min: {selectedMapping.minQuantity} · Reorder: {selectedMapping.reorderPoint}</div>
-              {/* Barcode placeholder */}
-              <div className="flex justify-center mt-2">
-                <div className="flex gap-px h-10">
-                  {selectedMapping.productSKU.split("").map((_, i) => (
-                    <div key={i} className="bg-gray-900" style={{ width: i % 3 === 0 ? 3 : i % 2 === 0 ? 2 : 1 }}/>
-                  ))}
-                </div>
+              <div className="text-gray-500">Capacity</div>
+            </div>
+            <div className="bg-gray-50 rounded p-1.5">
+              <div className="font-bold text-gray-700">
+                {selectedShelf.currentOccupancy}
               </div>
-              <div className="text-[10px] font-mono text-gray-500">{selectedMapping.productSKU}</div>
+              <div className="text-gray-500">Occupied</div>
+            </div>
+            <div className="bg-gray-50 rounded p-1.5">
+              <div
+                className={cn(
+                  "font-bold",
+                  util >= 90
+                    ? "text-red-600"
+                    : util >= 70
+                    ? "text-orange-600"
+                    : "text-emerald-600"
+                )}
+              >
+                {util}%
+              </div>
+              <div className="text-gray-500">Used</div>
+            </div>
+          </div>
+
+          {/* Temperature & Status */}
+          <div className="flex justify-center gap-2 pt-1">
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-xs",
+                selectedShelf.temperature === "frozen"
+                  ? "border-blue-400 text-blue-600"
+                  : selectedShelf.temperature === "cold"
+                  ? "border-cyan-400 text-cyan-600"
+                  : "border-gray-400 text-gray-600"
+              )}
+            >
+              {selectedShelf.temperature || "ambient"}
+            </Badge>
+            <Badge
+              className={
+                statusColors[selectedShelf.status] ||
+                "bg-gray-400 text-white"
+              }
+            >
+              {selectedShelf.status}
+            </Badge>
+          </div>
+
+          {/* Products on this shelf */}
+          {shelfProducts.length > 0 && (
+            <div className="border-t pt-3 space-y-1.5">
+              <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                Products on shelf ({shelfProducts.length})
+              </div>
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {shelfProducts.map((m) => (
+                  <div
+                    key={m.id}
+                    className="flex items-center justify-between text-xs bg-gray-50 rounded px-2 py-1"
+                  >
+                    <span className="truncate max-w-[160px] font-medium text-gray-700">
+                      {m.productName}
+                    </span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Badge
+                        variant="outline"
+                        className="text-[9px] px-1 py-0"
+                      >
+                        {m.brand}
+                      </Badge>
+                      <span className="font-mono font-bold text-gray-600">
+                        ×{m.quantity}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsLabelDialogOpen(false)}>Close</Button>
-            <Button onClick={() => { window.print(); toast.success("Sent to printer"); }} className="gap-1.5">
-              <Printer className="w-4 h-4"/>Print Label
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
+          {shelfProducts.length === 0 && (
+            <div className="border-t pt-3">
+              <div className="text-xs text-gray-400 italic">
+                No products assigned
+              </div>
+            </div>
+          )}
+
+          {/* Barcode placeholder — uses shelf fullCode */}
+          <div className="flex justify-center mt-2">
+            <div className="flex gap-px h-10">
+              {selectedShelf.fullCode.split("").map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-gray-900"
+                  style={{
+                    width: i % 3 === 0 ? 3 : i % 2 === 0 ? 2 : 1,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="text-[10px] font-mono text-gray-500">
+            {selectedShelf.fullCode}
+          </div>
+        </div>
+      );
+    })()}
+
+    <DialogFooter>
+      <Button
+        variant="outline"
+        onClick={() => setIsLabelDialogOpen(false)}
+      >
+        Close
+      </Button>
+      <Button
+        onClick={() => {
+          window.print();
+          toast.success("Sent to printer");
+        }}
+        className="gap-1.5"
+      >
+        <Printer className="w-4 h-4" />
+        Print Label
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+      {/* ════ DELETE SHELF CONFIRMATION DIALOG ════ */}
+<Dialog open={deleteShelfDialog.open} onOpenChange={(o) => !o && setDeleteShelfDialog({ open: false, shelfId: "", shelfCode: "" })}>
+  <DialogContent className="w-[90vw] sm:max-w-[400px]">
+    <DialogHeader>
+      <DialogTitle className="flex items-center gap-2 text-red-600">
+        <AlertTriangle className="w-5 h-5" />
+        Delete Shelf Location
+      </DialogTitle>
+      <DialogDescription>
+        Are you sure you want to delete shelf <strong>"{deleteShelfDialog.shelfCode}"</strong>? This action cannot be undone.
+      </DialogDescription>
+    </DialogHeader>
+    <DialogFooter className="gap-2 flex-col sm:flex-row pt-2">
+      <Button
+        variant="outline"
+        className="w-full sm:w-auto"
+        onClick={() => setDeleteShelfDialog({ open: false, shelfId: "", shelfCode: "" })}
+      >
+        Cancel
+      </Button>
+      <Button
+        variant="destructive"
+        className="w-full sm:w-auto"
+        onClick={() => {
+          handleDeleteShelf(deleteShelfDialog.shelfId);
+          setDeleteShelfDialog({ open: false, shelfId: "", shelfCode: "" });
+        }}
+      >
+        <Trash2 className="w-4 h-4 mr-2" />
+        Delete
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+
+{/* ════ DELETE PRODUCT MAPPING CONFIRMATION DIALOG ════ */}
+<Dialog open={deleteMappingDialog.open} onOpenChange={(o) => !o && setDeleteMappingDialog({ open: false, mappingId: "", productName: "" })}>
+  <DialogContent className="w-[90vw] sm:max-w-[400px]">
+    <DialogHeader>
+      <DialogTitle className="flex items-center gap-2 text-red-600">
+        <AlertTriangle className="w-5 h-5" />
+        Remove Product from Shelf
+      </DialogTitle>
+      <DialogDescription>
+        Are you sure you want to remove <strong>"{deleteMappingDialog.productName}"</strong> from its shelf location? This action cannot be undone.
+      </DialogDescription>
+    </DialogHeader>
+    <DialogFooter className="gap-2 flex-col sm:flex-row pt-2">
+      <Button
+        variant="outline"
+        className="w-full sm:w-auto"
+        onClick={() => setDeleteMappingDialog({ open: false, mappingId: "", productName: "" })}
+      >
+        Cancel
+      </Button>
+      <Button
+        variant="destructive"
+        className="w-full sm:w-auto"
+        onClick={() => {
+          handleRemoveMapping(deleteMappingDialog.mappingId);
+          setDeleteMappingDialog({ open: false, mappingId: "", productName: "" });
+        }}
+      >
+        <Trash2 className="w-4 h-4 mr-2" />
+        Remove
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+{/* ════ SHELF PRODUCTS DIALOG ════ */}
+<Dialog
+  open={shelfProductsDialog.open}
+  onOpenChange={(o) =>
+    !o && setShelfProductsDialog({ open: false, shelf: null })
+  }
+>
+  <DialogContent className="w-[95vw] sm:max-w-[620px] max-h-[85vh] overflow-hidden flex flex-col">
+    <DialogHeader>
+      <DialogTitle className="flex items-center gap-2">
+        <Package className="w-5 h-5 text-blue-600" />
+        Products on Shelf
+        {shelfProductsDialog.shelf && (
+          <Badge className="bg-purple-100 text-purple-700 border-purple-200 ml-1 font-mono">
+            {shelfProductsDialog.shelf.fullCode}
+          </Badge>
+        )}
+      </DialogTitle>
+      <DialogDescription>
+        {shelfProductsDialog.shelf && (
+          <span className="flex items-center gap-2 flex-wrap">
+            <Badge variant="secondary">{shelfProductsDialog.shelf.zone}</Badge>
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-xs",
+                shelfProductsDialog.shelf.temperature === "frozen"
+                  ? "border-blue-400 text-blue-600"
+                  : shelfProductsDialog.shelf.temperature === "cold"
+                  ? "border-cyan-400 text-cyan-600"
+                  : "border-gray-400 text-gray-600"
+              )}
+            >
+              {shelfProductsDialog.shelf.temperature || "ambient"}
+            </Badge>
+            <Badge
+              className={
+                statusColors[shelfProductsDialog.shelf.status] ||
+                "bg-gray-400 text-white"
+              }
+            >
+              {shelfProductsDialog.shelf.status}
+            </Badge>
+          </span>
+        )}
+      </DialogDescription>
+    </DialogHeader>
+
+    {shelfProductsDialog.shelf && (() => {
+      const shelfProds = mappings.filter(
+        (m) => m.shelfLocation.id === shelfProductsDialog.shelf!.id
+      );
+      const shelf = shelfProductsDialog.shelf!;
+      const util =
+        shelf.capacity > 0
+          ? Math.round((shelf.currentOccupancy / shelf.capacity) * 100)
+          : 0;
+
+      return (
+        <div className="flex flex-col gap-4 overflow-hidden">
+          {/* Shelf Stats Summary */}
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2.5 text-center">
+              <div className="font-bold text-blue-700 text-lg">
+                {shelfProds.length}
+              </div>
+              <div className="text-blue-600">Products</div>
+            </div>
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-2.5 text-center">
+              <div className="font-bold text-purple-700 text-lg">
+                {shelf.currentOccupancy}/{shelf.capacity}
+              </div>
+              <div className="text-purple-600">Occupied</div>
+            </div>
+            <div
+              className={cn(
+                "border rounded-lg p-2.5 text-center",
+                util >= 90
+                  ? "bg-red-50 border-red-200"
+                  : util >= 70
+                  ? "bg-orange-50 border-orange-200"
+                  : "bg-emerald-50 border-emerald-200"
+              )}
+            >
+              <div
+                className={cn(
+                  "font-bold text-lg",
+                  util >= 90
+                    ? "text-red-700"
+                    : util >= 70
+                    ? "text-orange-700"
+                    : "text-emerald-700"
+                )}
+              >
+                {util}%
+              </div>
+              <div
+                className={cn(
+                  util >= 90
+                    ? "text-red-600"
+                    : util >= 70
+                    ? "text-orange-600"
+                    : "text-emerald-600"
+                )}
+              >
+                Utilization
+              </div>
+            </div>
+          </div>
+
+          {/* Products List */}
+          {shelfProds.length === 0 ? (
+            <div className="text-center py-10">
+              <Box className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+              <p className="text-gray-400 font-medium">
+                No products on this shelf
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                Use "Map Product" to assign products here
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-y-auto max-h-[380px] -mx-1 px-1">
+              <div className="space-y-2">
+                {shelfProds.map((m) => {
+                  const isLow =
+                    m.quantity <= m.reorderPoint && m.quantity > 0;
+                  const isOut = m.quantity === 0;
+
+                  return (
+                    <div
+                      key={m.id}
+                      className={cn(
+                        "border rounded-lg p-3 transition-colors",
+                        isOut
+                          ? "bg-red-50 border-red-200"
+                          : isLow
+                          ? "bg-amber-50 border-amber-200"
+                          : "bg-white border-gray-200 hover:border-gray-300"
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        {/* Left: Product Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-sm text-gray-900 truncate">
+                              {m.productName}
+                            </span>
+                            {m.isPrimaryLocation && (
+                              <Badge className="bg-blue-500 text-white text-[9px] px-1 py-0 shrink-0">
+                                <Star className="w-2 h-2 inline mr-0.5" />
+                                Primary
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500 font-mono mb-1.5">
+                            {m.productSKU}
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1.5 py-0"
+                            >
+                              {m.brand}
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1.5 py-0"
+                            >
+                              {m.partType}
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1.5 py-0 text-gray-500"
+                            >
+                              {m.model}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {/* Right: Quantity & Status */}
+                        <div className="text-right shrink-0">
+                          <div
+                            className={cn(
+                              "text-2xl font-black",
+                              isOut
+                                ? "text-red-600"
+                                : isLow
+                                ? "text-amber-600"
+                                : "text-gray-900"
+                            )}
+                          >
+                            {m.quantity}
+                          </div>
+                          <div className="text-[10px] text-gray-500 mb-1">
+                            units
+                          </div>
+                          {isOut ? (
+                            <Badge className="bg-red-500 text-white text-[10px] px-1.5">
+                              OUT OF STOCK
+                            </Badge>
+                          ) : isLow ? (
+                            <Badge className="bg-amber-500 text-white text-[10px] px-1.5">
+                              LOW STOCK
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-emerald-500 text-white text-[10px] px-1.5">
+                              IN STOCK
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Bottom: Meta info */}
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 text-[10px] text-gray-400">
+                        <span>
+                          Min: {m.minQuantity} · Reorder: {m.reorderPoint}
+                        </span>
+                        <span>
+                          Restocked:{" "}
+                          {new Date(m.lastRestocked).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    })()}
+
+    <DialogFooter className="pt-2 border-t">
+      <Button
+        variant="outline"
+        onClick={() =>
+          setShelfProductsDialog({ open: false, shelf: null })
+        }
+      >
+        Close
+      </Button>
+      {shelfProductsDialog.shelf && mappings.some(
+        (m) => m.shelfLocation.id === shelfProductsDialog.shelf!.id
+      ) && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1.5 border-purple-300 text-purple-700 hover:bg-purple-50"
+          onClick={() => {
+            setShelfProductsDialog({ open: false, shelf: null });
+            setSelectedShelf(shelfProductsDialog.shelf);
+            setSelectedMapping(null);
+            setIsLabelDialogOpen(true);
+          }}
+        >
+          <Printer className="w-3.5 h-3.5" />
+          Print Shelf Label
+        </Button>
+      )}
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
     </div>
   );
 }
